@@ -9,11 +9,13 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from core import models
 
+
 class UserCreationForm(forms.ModelForm):
     """A form for creating new users. Includes all the required
     fields, plus a repeated password."""
     password1 = forms.CharField(label='Password', widget=forms.PasswordInput)
-    password2 = forms.CharField(label='Password confirmation', widget=forms.PasswordInput)
+    password2 = forms.CharField(
+        label='Password confirmation', widget=forms.PasswordInput)
 
     class Meta:
         model = models.User
@@ -28,13 +30,13 @@ class UserCreationForm(forms.ModelForm):
         return user
 
 
-
 class UserAdmin(BaseUserAdmin):
     """Define the admin pages for users"""
     ordering = ['id']
     list_display = ['email', 'first_name', 'last_name', 'phone_number']
     fieldsets = (
-        (None, {'fields': ('email', 'first_name', 'last_name', 'phone_number', 'password')}),
+        (None, {'fields': ('email', 'first_name',
+                           'last_name', 'phone_number', 'password')}),
         (
             _('Permissions'),
             {'fields':
@@ -51,7 +53,7 @@ class UserAdmin(BaseUserAdmin):
     readonly_fields = ['last_login']
     add_fieldsets = (
         (None, {'classes': ('wide',),
-                'fields':(
+                'fields': (
                     'email',
                     'password1',
                     'password2',
@@ -65,6 +67,7 @@ class UserAdmin(BaseUserAdmin):
                 )}
          ),
     )
+
 
 admin.site.register(models.User, UserAdmin)
 admin.site.unregister(Group)

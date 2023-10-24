@@ -8,9 +8,13 @@ from core import models
 
 from django.core.exceptions import ValidationError
 
-# def create_user(email = 'user@example.com', password ='password'):
-#     """create and return a new user"""
-#     return get_user_model().objects.create_user(email=email, password=password)
+
+def create_user(email='user@example.com', password='password'):
+    """create and return a new user"""
+    return get_user_model().objects.create_user(
+        email=email,
+        password=password)
+
 
 class ModelTests(TestCase):
     """Test the models"""
@@ -92,7 +96,8 @@ class ModelTests(TestCase):
                 phone_number=self.testphonenumber)
 
     def test_new_user_without_phone_number_raises_error(self):
-        """ Test that creating a user without phone number raises an exception"""
+        """ Test that creating a user without
+        phone number raises an exception"""
         with self.assertRaises(ValueError):
             get_user_model().objects.create_user(
                 email=self.testemail,
@@ -137,7 +142,7 @@ class ModelTests(TestCase):
                 phone_number=self.testphonenumber,
                )
         with self.assertRaises(ValidationError):
-            user = get_user_model().objects.create_user(
+            get_user_model().objects.create_user(
                     email=self.testemail,
                     password=self.testpassword,
                     first_name=self.testfirstname,
@@ -155,7 +160,7 @@ class ModelTests(TestCase):
                 phone_number=self.testphonenumber,
                )
         with self.assertRaises(ValidationError):
-            user = get_user_model().objects.create_user(
+            get_user_model().objects.create_user(
                     email='user1@example.com',
                     password=self.testpassword,
                     first_name=self.testfirstname,
