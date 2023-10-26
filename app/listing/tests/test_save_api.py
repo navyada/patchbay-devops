@@ -1,10 +1,6 @@
 """
 Test that users can save listings
 """
-import tempfile
-import os
-
-from PIL import Image
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -15,15 +11,10 @@ from rest_framework.test import APIClient
 
 from core.models import (
     Listing,
-    Category,
     Address,
     Saved
     )
-from listing.serializers import (
-    ListingSerializer,
-    ListingDetailSerializer,
-    SavedSerializer
-    )
+
 
 SAVED_URL = reverse('listing:saved-list')
 def detail_url(id):

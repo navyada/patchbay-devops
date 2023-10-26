@@ -134,3 +134,13 @@ class Saved(models.Model):
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE)
     class Meta:
         unique_together = ('user', 'listing')
+
+class ListingReview(models.Model):
+    """Write or see a review for a listing"""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE)
+    stars = models.IntegerField(default=0)
+    text = models.TextField(max_length=500, blank=True)
+    class Meta:
+        unique_together = ('user', 'listing')
+

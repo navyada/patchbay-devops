@@ -3,7 +3,8 @@ from core.models import (
     Listing,
     Category,
     Address,
-    Saved)
+    Saved,
+    ListingReview)
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -69,4 +70,11 @@ class SavedSerializer(serializers.ModelSerializer):
     class Meta:
         model = Saved
         fields = ['id', 'user', 'listing']
+        read_only_fields = ['id']
+
+class ListingReviewSerializer(serializers.ModelSerializer):
+    """Serializer for listing reviews"""
+    class Meta:
+        model = ListingReview
+        fields = ['id', 'user', 'listing', 'stars', 'text']
         read_only_fields = ['id']

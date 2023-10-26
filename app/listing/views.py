@@ -17,7 +17,8 @@ from rest_framework.response import Response
 from core.models import (
     Listing,
     Category,
-    Saved)
+    Saved,
+    ListingReview)
 from listing import serializers
 
 class ListingViewSet(viewsets.ModelViewSet):
@@ -116,3 +117,34 @@ class SavedViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Retrive listings for authenticated user"""
         return self.queryset.filter(user=self.request.user).order_by('-id').distinct()
+
+class ListingReviewViewSet(viewsets.ModelViewSet):
+    """A viewset for listing reviews"""
+    serializer_class = serializers.ListingReviewSerializer
+    queryset = ListingReview.objects.all()
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        """Retrive reviews for authenticated user"""
+        return self.queryset.filter(user=self.request.user).order_by('-id').distinct()
+
+    def create(self, request, *args, **kwargs):
+        listing_id = request.data.get('listing')
+        try:
+            listing = Listing.objects.get(pk=listing_id)
+        except Listing.DoesNotExist:
+            return Response({"error": "Listing not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if listing.user == request.user:
+            return Response({"error": "You cannot review your own listing"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+class ListingReviewReadOnlyViewSet(viewsets.ReadOnlyModelViewSet):
+    """A viewset for listing reviews without authentication"""
+    serializer_class = serializers.ListingReviewSerializer
+    queryset = ListingReview.objects.all()

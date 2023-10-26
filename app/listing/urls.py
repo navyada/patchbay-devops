@@ -12,6 +12,8 @@ router.register('readonly', views.ListingReadOnlyViewSet, basename='listingreado
 router.register('category', views.CategoryViewSet)
 router.register('categoryreadonly', views.CategoryReadOnlyViewSet, basename='categoryreadonly')
 router.register('saved', views.SavedViewSet)
+router.register('listingreview', views.ListingReviewViewSet)
+router.register('listingreviewreadonly', views.ListingReviewReadOnlyViewSet, basename='listingreviewreadonly')
 app_name = 'listing'
 urlpatterns = [path("", include(router.urls))]
 

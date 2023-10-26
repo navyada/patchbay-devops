@@ -228,3 +228,31 @@ class ModelTests(TestCase):
         listing = models.Listing.objects.create(user=user, address=address, **default)
         saved = models.Saved.objects.create(user=user, listing=listing)
         self.assertTrue(models.Saved.objects.filter(user=user, listing=listing).exists())
+
+    def test_writing_review(self):
+        user = get_user_model().objects.create_user(
+                email=self.testemail,
+                password=self.testpassword,
+                first_name=self.testfirstname,
+                last_name=self.testlastname,
+                phone_number=self.testphonenumber,
+               )
+        default = {
+        'title': 'Sample Title',
+        'price_cents': 50200,
+        'description': 'Sample Description',
+        'address': {'address_1':'1197 W 36th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
+                 }
+
+        address = default.pop('address', None)
+        address, created = models.Address.objects.get_or_create(**address)
+        listing = models.Listing.objects.create(user=user, address=address, **default)
+        user2 = get_user_model().objects.create_user(
+                email='test123@example.com',
+                password=self.testpassword,
+                first_name=self.testfirstname,
+                last_name=self.testlastname,
+                phone_number='8054929345',
+               )
+        review = models.ListingReview.objects.create(user=user2, listing=listing, stars=4, text="Good Rental")
+        self.assertTrue(models.ListingReview.objects.filter(user=user2, listing=listing).exists())
