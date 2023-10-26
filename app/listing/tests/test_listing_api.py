@@ -14,11 +14,14 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from core.models import (
-    Listing
+    Listing,
+    Category,
+    Address
     )
 from listing.serializers import (
     ListingSerializer,
-    ListingDetailSerializer
+    ListingDetailSerializer,
+    AddressSerializer
     )
 
 LISTINGS_URL = reverse('listing:listing-list')
@@ -33,10 +36,13 @@ def create_listing(user, **params):
     default = {
         'title': 'Sample Title',
         'price_cents': 50200,
-        'description': 'Sample Description'
+        'description': 'Sample Description',
+        'address': {'address_1':'1197 W 36th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
     }
     default.update(params)
-    listing = Listing.objects.create(user=user, **default)
+    address = default.pop('address', None)
+    address, created = Address.objects.get_or_create(**address)
+    listing = Listing.objects.create(user=user, address=address, **default)
     return listing
 
 def create_user(**params):
@@ -72,9 +78,10 @@ class PublicListingAPITests(TestCase):
         payload = {
         'title': 'Sample Title',
         'price_cents': 50200,
-        'description': 'Sample Description'
+        'description': 'Sample Description',
+        'address': {'address_1':'1197 W 36th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
     }
-        res = self.client.post(READ_LISTINGS_URL, payload)
+        res = self.client.post(READ_LISTINGS_URL, payload, format='json')
         self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
         user = create_user(email='test1@example.com',
@@ -91,7 +98,7 @@ class PublicListingAPITests(TestCase):
         res = self.client.delete(url)
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
-class PrivateRecipeAPITests(TestCase):
+class PrivateListingAPITests(TestCase):
     """Test authenticated API Requests"""
     def setUp(self):
         self.client = APIClient()
@@ -125,13 +132,13 @@ class PrivateRecipeAPITests(TestCase):
         create_listing(user=self.user)
 
         res = self.client.get(LISTINGS_URL)
-        recipes = Listing.objects.filter(user=self.user)
-        serializer = ListingSerializer(recipes, many=True)
+        listings = Listing.objects.filter(user=self.user)
+        serializer = ListingSerializer(listings, many=True)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
 
     def test_retrieve_listing_details(self):
-        """Test retriving a list of recipes"""
+        """Test retriving a list of listings"""
         listing = create_listing(user=self.user,
                        replacement_value=Decimal('100.00'),
                        make='Fender',
@@ -147,13 +154,33 @@ class PrivateRecipeAPITests(TestCase):
         payload = {
             'title': 'sample listing',
             'price_cents': 10000,
-            'description':'sample description'
+            'description':'sample description',
+            'address': {'address_1':'1197 W 36th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
         }
-        res = self.client.post(LISTINGS_URL, payload)
+        res = self.client.post(LISTINGS_URL, payload, format='json')
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         listing = Listing.objects.get(id=res.data['id'])
         for k, v in payload.items():
-            self.assertEqual(getattr(listing, k), v)
+            if k == 'address':
+                self.assertTrue(Address.objects.filter(address_1=v['address_1']).exists())
+            else:
+                self.assertEqual(getattr(listing, k), v)
+        self.assertEqual(listing.user, self.user)
+
+    def test_create_listing_with_address(self):
+        """Test creating a listing"""
+        payload = {
+            'title': 'sample listing',
+            'price_cents': 10000,
+            'description':'sample description',
+            'address': {'address_1': '1129 W 3th St',
+                         'city': 'Los Angeles',
+                         'state': 'CA',
+                         'zip_code': '90007'}
+        }
+        res = self.client.post(LISTINGS_URL, payload, format='json')
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        listing = Listing.objects.get(id=res.data['id'])
         self.assertEqual(listing.user, self.user)
 
 
@@ -183,14 +210,18 @@ class PrivateRecipeAPITests(TestCase):
         payload = {
             'title': 'new title',
             'price_cents':600,
+            'address': {'address_1':'1197 W 37th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
         }
         url = detail_url(listing.id)
-        res = self.client.put(url, payload)
+        res = self.client.put(url, payload, format='json')
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         listing.refresh_from_db()
         for k,v in payload.items():
-            self.assertEqual(getattr(listing, k), v)
+            if k =='address':
+                self.assertTrue(Address.objects.filter(address_1 = payload['address']['address_1']).exists())
+            else:
+                self.assertEqual(getattr(listing, k), v)
         self.assertEqual(listing.user, self.user)
 
     def test_update_user_returns_error(self):
@@ -247,6 +278,45 @@ class PrivateRecipeAPITests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(Listing.objects.filter(id=listing.id).exists())
 
+    def test_creating_listing_with_category(self):
+        """Test creating a listing with a category"""
+        category = Category.objects.create(name='Drums')
+        payload = {
+        'title': 'Sample Title',
+        'price_cents': 50200,
+        'description': 'Sample Description',
+        'category': [category.id],
+        'address': {'address_1':'1197 W 36th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
+        }
+        res = self.client.post(LISTINGS_URL, payload, format='json')
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+    def test_filtering_listing_with_category(self):
+        """Test filtering a listing with a category"""
+        category = Category.objects.create(name='Drums')
+        c1 = create_listing(user=self.user)
+        c2 = create_listing(user=self.user, title='Sample2')
+        c2.category.add(category)
+        s1 = ListingSerializer(c1)
+        s2 = ListingSerializer(c2)
+        params = {'category': f'{category.id}'}
+        res = self.client.get(LISTINGS_URL, params)
+        self.assertNotIn(s1.data, res.data)
+        self.assertIn(s2.data, res.data)
+
+    def test_filtering_listing_with_category_read_only(self):
+        """Test filtering a listing with a category"""
+        category = Category.objects.create(name='Drums')
+        c1 = create_listing(user=self.user)
+        c2 = create_listing(user=self.user, title='Sample2')
+        c2.category.add(category)
+        s1 = ListingSerializer(c1)
+        s2 = ListingSerializer(c2)
+        params = {'category': f'{category.id}'}
+        res = self.client.get(READ_LISTINGS_URL, params)
+        self.assertNotIn(s1.data, res.data)
+        self.assertIn(s2.data, res.data)
+
 
 class AdminPrivateTestCase(TestCase):
     """Tests that admin can access and edit all listings"""
@@ -282,13 +352,17 @@ class AdminPrivateTestCase(TestCase):
         payload = {
             'title': 'sample listing',
             'price_cents': 10000,
-            'description':'sample description'
+            'description':'sample description',
+            'address': {'address_1':'1197 W 36th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
         }
-        res = self.client.post(LISTINGS_URL, payload)
+        res = self.client.post(LISTINGS_URL, payload, format='json')
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         listing = Listing.objects.get(id=res.data['id'])
         for k, v in payload.items():
-            self.assertEqual(getattr(listing, k), v)
+            if k == 'address':
+                self.assertTrue(Address.objects.filter(address_1=payload['address']['address_1']).exists())
+            else:
+                self.assertEqual(getattr(listing, k), v)
         self.assertEqual(listing.user, self.user)
 
     def test_update_other_user_listing_success(self):
@@ -320,4 +394,3 @@ class AdminPrivateTestCase(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Listing.objects.filter(id=listing.id).exists())
-

@@ -72,3 +72,6 @@ class UserAdmin(BaseUserAdmin):
 admin.site.register(models.User, UserAdmin)
 admin.site.unregister(Group)
 admin.site.register(models.Listing)
+admin.site.register(models.Category)
+admin.site.register(models.Address)
+admin.site.register(models.Saved)

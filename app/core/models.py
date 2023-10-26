@@ -14,6 +14,8 @@ import os
 from django.core.exceptions import ValidationError
 
 from phonenumber_field.modelfields import PhoneNumberField
+from django.utils.translation import ugettext as _
+from localflavor.us.models import USStateField
 
 
 class UserManager(BaseUserManager):
@@ -48,11 +50,11 @@ class UserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, first_name,
-                        last_name, phone_number, password
+                        last_name, phone_number, password, **extra_fields
                         ):
         """Create and return a new superuser"""
         user = self.create_user(email, first_name,
-                                last_name, phone_number, password)
+                                last_name, phone_number, password, **extra_fields)
         user.is_staff = True
         user.is_superuser = True
         user.save(using=self._db)
@@ -83,6 +85,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ['first_name', 'last_name', 'phone_number']
 
 
+class Address(models.Model):
+    address_1 = models.CharField(_("address"), max_length=128)
+    address_2 = models.CharField(_("address cont'd"), max_length=128, blank=True)
+
+    city = models.CharField(_("city"), max_length=64, default="Los Angeles")
+    state = USStateField(_("state"), default="CA")
+    zip_code = models.CharField(_("zip code"), max_length=5, default="90007")
+
+
 class Listing(models.Model):
     """Listing object"""
     user = models.ForeignKey(
@@ -95,7 +106,31 @@ class Listing(models.Model):
     make = models.CharField(max_length=255, null=True)
     model = models.CharField(max_length=255, null=True)
     replacement_value = models.DecimalField(max_digits=6, decimal_places=2, null=True)
-    # tags = models.ManyToManyField('Tag')
+    category = models.ManyToManyField('Category', blank=True)
+    address = models.ForeignKey(Address, on_delete=models.CASCADE)
     # image = models.ImageField(null=True, upload_to = recipe_image_file_path)
     def __str__(self):
         return self.title
+
+class Category(models.Model):
+    """ Category for filtering instruments"""
+    name = models.CharField(max_length=255)
+    parent_category = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name='child_categories'
+    )
+    def __str__(self):
+        return self.name
+
+
+
+
+class Saved(models.Model):
+    """Save a listing"""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE)
+    class Meta:
+        unique_together = ('user', 'listing')
