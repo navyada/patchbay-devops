@@ -81,3 +81,21 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name', 'phone_number']
+
+
+class Listing(models.Model):
+    """Listing object"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE)
+    title=models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    price_cents=models.PositiveIntegerField()
+    year = models.PositiveIntegerField(null=True)
+    make = models.CharField(max_length=255, null=True)
+    model = models.CharField(max_length=255, null=True)
+    replacement_value = models.DecimalField(max_digits=6, decimal_places=2, null=True)
+    # tags = models.ManyToManyField('Tag')
+    # image = models.ImageField(null=True, upload_to = recipe_image_file_path)
+    def __str__(self):
+        return self.title

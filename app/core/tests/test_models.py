@@ -166,3 +166,23 @@ class ModelTests(TestCase):
                     first_name=self.testfirstname,
                     last_name=self.testlastname,
                     phone_number=self.testphonenumber)
+
+    def test_create_listing(self):
+        """Test creating a listing is successful"""
+        user_details = {
+                        'email': 'test@example.com',
+                        'first_name': 'test ',
+                        'last_name': 'name',
+                        'phone_number': '+18052345678',
+                        'city': None,
+                        'bio': None,
+                        'studio': None
+                        }
+        user = get_user_model().objects.create_user(**user_details)
+        listing = models.Listing.objects.create(
+            user=user,
+            title='Sample listing',
+            description = 'I have a guitar to rent out',
+            price_cents=5050)
+
+        self.assertEqual(str(listing), listing.title)
