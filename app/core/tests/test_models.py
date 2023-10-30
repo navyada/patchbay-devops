@@ -256,3 +256,71 @@ class ModelTests(TestCase):
                )
         review = models.ListingReview.objects.create(user=user2, listing=listing, stars=4, text="Good Rental")
         self.assertTrue(models.ListingReview.objects.filter(user=user2, listing=listing).exists())
+
+    def test_initiate_order(self):
+        """Test creating a new order"""
+
+        user = get_user_model().objects.create_user(
+        email=self.testemail,
+        password=self.testpassword,
+        first_name=self.testfirstname,
+        last_name=self.testlastname,
+        phone_number=self.testphonenumber,
+        )
+        default = {
+        'title': 'Sample Title',
+        'price_cents': 50200,
+        'description': 'Sample Description',
+        'address': {'address_1':'1197 W 36th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
+                 }
+
+        address = default.pop('address', None)
+        address, created = models.Address.objects.get_or_create(**address)
+        listing = models.Listing.objects.create(user=user, address=address, **default)
+        user2 = get_user_model().objects.create_user(
+                email='test123@example.com',
+                password=self.testpassword,
+                first_name=self.testfirstname,
+                last_name=self.testlastname,
+                phone_number='8054929345')
+        order = models.Orders.objects.create(user=user2,
+                                             lender=listing.user,
+                                            listing=listing,
+                                            requested_date='2023-10-26',
+                                            start_date='2023-10-27',
+                                            end_date='2023-10-29',
+                                            subtotal_price=10)
+        self.assertEqual(models.Orders.objects.count(), 1)
+
+
+    def test_create_user_review(self):
+        """Test creating a review for a user"""
+        user1 = get_user_model().objects.create_user(
+                email=self.testemail,
+                password=self.testpassword,
+                first_name=self.testfirstname,
+                last_name=self.testlastname,
+                phone_number=self.testphonenumber
+        )
+        user2 = get_user_model().objects.create_user(
+                email='test12@example.com',
+                password=self.testpassword,
+                first_name=self.testfirstname,
+                last_name=self.testlastname,
+                phone_number='8056372476',
+               )
+        models.UserReview.objects.create(
+            lender=user1,
+            renter=user2,
+            stars=3,
+            text='Bad person')
+        self.assertEqual(models.UserReview.objects.count(), 1)
+
+@patch('core.models.uuid.uuid4')
+def test_listing_file_name_uuid(self, mock_uuid):
+    """Test generating image path"""
+    uuid = 'test-uuid'
+    mock_uuid.return_value = uuid
+    file_path = models.listing_image_file_path(None, 'example.jpg')
+
+    self.assertEqual(file_path, f'uploads/listing/{uuid}.jpg')

@@ -13,13 +13,19 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.db.models import Q
+
 
 from core.models import (
+    User,
     Listing,
     Category,
     Saved,
-    ListingReview)
+    ListingReview,
+    Orders,
+    UserReview)
 from listing import serializers
+from rest_framework import status
 
 class ListingViewSet(viewsets.ModelViewSet):
     """View for manage listing APIs (user's listings, not all)"""
@@ -47,23 +53,23 @@ class ListingViewSet(viewsets.ModelViewSet):
         """Return the serializer class for request"""
         if self.action == 'list':
             return serializers.ListingSerializer
-        # elif self.action == 'upload_image':
-        #     return serializers.RecipeImageSerializer
+        elif self.action == 'upload_image':
+            return serializers.ListingImageSerializer
         return self.serializer_class
 
     def perform_create(self, serializer):
         """Create a new listing"""
         serializer.save(user=self.request.user)
 
-    # @action(methods=['POST'], detail=True, url_path='upload-image')
-    # def upload_image(self, request, pk=None):
-    #     """Upload an image to recipe"""
-    #     recipe = self.get_object()
-    #     serializer = self.get_serializer(recipe, data=request.data)
-    #     if serializer.is_valid():
-    #         serializer.save()
-    #         return Response(serializer.data, status=status.HTTP_200_OK)
-    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    @action(methods=['POST'], detail=True, url_path='upload-image')
+    def upload_image(self, request, pk=None):
+        """Upload an image to listing"""
+        listing = self.get_object()
+        serializer = self.get_serializer(listing, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ListingReadOnlyViewSet(viewsets.ReadOnlyModelViewSet):
@@ -83,7 +89,7 @@ class ListingReadOnlyViewSet(viewsets.ReadOnlyModelViewSet):
         if categories:
             cat_ids = self._params_to_ints(categories)
             queryset = queryset.filter(category__id__in=cat_ids)
-        return queryset.filter().order_by('-id').distinct()
+        return queryset.order_by('-id').distinct()
 
     def get_serializer_class(self):
         """Return the serializer class for request"""
@@ -148,3 +154,51 @@ class ListingReviewReadOnlyViewSet(viewsets.ReadOnlyModelViewSet):
     """A viewset for listing reviews without authentication"""
     serializer_class = serializers.ListingReviewSerializer
     queryset = ListingReview.objects.all()
+
+
+class UserReviewViewSet(viewsets.ModelViewSet):
+    """A viewset for listing user reviews"""
+    serializer_class = serializers.UserReviewSerializer
+    queryset = UserReview.objects.all()
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        """Retrive reviews for authenticated user"""
+        return self.queryset.filter(lender=self.request.user).order_by('-id').distinct()
+
+    def create(self, request, *args, **kwargs):
+        renter_id = request.data.get('renter')
+        lender_id = request.data.get('lender')
+        try:
+            order = Orders.objects.get(lender=lender_id)
+        except Orders.DoesNotExist:
+            return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if lender_id == renter_id:
+            return Response({"error": "You cannot review yourself"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+class UserReviewReadOnlyViewSet(viewsets.ReadOnlyModelViewSet):
+    """A viewset for user reviews without authentication"""
+    serializer_class = serializers.UserReviewSerializer
+    queryset = UserReview.objects.all()
+
+class OrdersViewSet(viewsets.ModelViewSet):
+    """A viewset for listing orders"""
+    serializer_class = serializers.OrdersSerializer
+    queryset = Orders.objects.all()
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        """Retrive orders for authenticated user"""
+        return self.queryset.filter(Q(user=self.request.user) | Q(lender=self.request.user)).order_by('-id').distinct()
+
+    def destroy(self, request, *args, **kwargs):
+        if not request.user.is_staff:
+            raise serializers.PermissionDenied("You do not have permission to delete this order.")
+        return super(OrdersViewSet, self).destroy(request, *args, **kwargs)

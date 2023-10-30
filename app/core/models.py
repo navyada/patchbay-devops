@@ -17,6 +17,12 @@ from phonenumber_field.modelfields import PhoneNumberField
 from django.utils.translation import ugettext as _
 from localflavor.us.models import USStateField
 
+def listing_image_file_path(instance, filename):
+    """Generate file path for new listing image"""
+    ext = os.path.splitext(filename)[1]
+    filename = f'{uuid.uuid4}{ext}'
+
+    return os.path.join('uploads', 'listing', filename)
 
 class UserManager(BaseUserManager):
     """" Manager for users"""
@@ -108,7 +114,7 @@ class Listing(models.Model):
     replacement_value = models.DecimalField(max_digits=6, decimal_places=2, null=True)
     category = models.ManyToManyField('Category', blank=True)
     address = models.ForeignKey(Address, on_delete=models.CASCADE)
-    # image = models.ImageField(null=True, upload_to = recipe_image_file_path)
+    image = models.ImageField(null=True, upload_to = listing_image_file_path)
     def __str__(self):
         return self.title
 
@@ -144,3 +150,42 @@ class ListingReview(models.Model):
     class Meta:
         unique_together = ('user', 'listing')
 
+
+ORDER_STATUS_PENDING = 'Pending'
+ORDER_STATUS_APPROVED = 'Approved'
+ORDER_STATUS_DENIED = 'Denied'
+ORDER_STATUS_CANCELLED = 'Cancelled'
+ORDER_STATUS_CHOICES = [
+    (ORDER_STATUS_PENDING, 'Pending'),
+    (ORDER_STATUS_APPROVED, 'Approved'),
+    (ORDER_STATUS_DENIED, 'Denied'),
+    (ORDER_STATUS_CANCELLED, 'Cancelled')
+]
+
+LENDER_RESPONSE_APPROVE = 'Approve'
+LENDER_RESPONSE_DENY = 'Deny'
+LENDER_RESPONSE_CHOICES = [
+    (LENDER_RESPONSE_APPROVE, 'Approve'),
+    (LENDER_RESPONSE_DENY, 'Deny')]
+class Orders(models.Model):
+    """Create or update an order"""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders')
+    lender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='lender_orders', null=True)
+    listing = models.ForeignKey('Listing', on_delete=models.CASCADE, related_name='orders')
+    requested_date = models.DateField()
+    start_date = models.DateField()
+    end_date = models.DateField()
+    status = models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, default=ORDER_STATUS_PENDING)
+    lender_response = models.CharField(max_length=20, choices=LENDER_RESPONSE_CHOICES, null=True, blank=True)
+    subtotal_price = models.DecimalField(max_digits=10, decimal_places=2, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+class UserReview(models.Model):
+    """Write or see a review for a renter"""
+    lender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='lender_review')
+    renter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='renter_review')
+    stars = models.IntegerField(default=0)
+    text = models.TextField(max_length=500, blank=True)
+    class Meta:
+        unique_together = ('lender', 'renter')

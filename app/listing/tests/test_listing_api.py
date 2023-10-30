@@ -49,6 +49,9 @@ def create_user(**params):
     """Create and return a new user"""
     return get_user_model().objects.create_user(**params)
 
+def image_upload_url(listing_id):
+    """Create and return image upload url"""
+    return reverse('listing:listing-upload-image', args=[listing_id])
 
 class PublicListingAPITests(TestCase):
     """Test unauthenticated API Requests"""
@@ -394,3 +397,44 @@ class AdminPrivateTestCase(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Listing.objects.filter(id=listing.id).exists())
+
+
+class ImageUploadTests(TestCase):
+    """Tests for the image upload API"""
+
+    def setUp(self):
+        self.client=APIClient()
+        self.user = create_user(email='test@example.com',
+                                first_name='Joe',
+                                last_name='Smith',
+                                phone_number='8054394923',
+                                password='testpass123')
+        self.client.force_authenticate(self.user)
+        self.listing = create_listing(user=self.user)
+
+    def tearDown(self):
+        self.listing.image.delete()
+
+
+    def test_upload_image(self):
+        """Test uploading an image to listing"""
+        url = image_upload_url(self.listing.id)
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+            img = Image.new('RGB', (10,10))
+            img.save(image_file, format='JPEG')
+            image_file.seek(0)
+            payload = {'image': image_file}
+            res = self.client.post(url, payload, format='multipart')
+
+        self.listing.refresh_from_db()
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('image', res.data)
+        self.assertTrue(os.path.exists(self.listing.image.path))
+
+    def test_upload_image_bad_request(self):
+        """Test uploading invalid image to listing"""
+        url = image_upload_url(self.listing.id)
+        payload = {'image': 'notanimage'}
+        res = self.client.post(url, payload, format='multipart')
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
