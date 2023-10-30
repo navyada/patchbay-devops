@@ -324,3 +324,12 @@ def test_listing_file_name_uuid(self, mock_uuid):
     file_path = models.listing_image_file_path(None, 'example.jpg')
 
     self.assertEqual(file_path, f'uploads/listing/{uuid}.jpg')
+
+@patch('core.models.uuid.uuid4')
+def test_user_file_name_uuid(self, mock_uuid):
+    """Test generating image path"""
+    uuid = 'test-uuid'
+    mock_uuid.return_value = uuid
+    file_path = models.user_image_file_path(None, 'example.jpg')
+
+    self.assertEqual(file_path, f'uploads/user/{uuid}.jpg')

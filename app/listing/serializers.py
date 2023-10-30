@@ -66,7 +66,9 @@ class ListingSerializer(serializers.ModelSerializer):
 class ListingDetailSerializer(ListingSerializer):
     """Serializer for listing details"""
     class Meta(ListingSerializer.Meta):
-        fields=['id', 'title', 'price_cents','description', 'year', 'make', 'model', 'replacement_value','address']
+        fields=['id', 'title', 'price_cents','description',
+                'year', 'make', 'model', 'replacement_value',
+                'address', 'image']
 
 class SavedSerializer(serializers.ModelSerializer):
     """Serializer for Saved model"""

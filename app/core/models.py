@@ -24,6 +24,13 @@ def listing_image_file_path(instance, filename):
 
     return os.path.join('uploads', 'listing', filename)
 
+def user_image_file_path(instance, filename):
+    """Generate file path for new user image"""
+    ext = os.path.splitext(filename)[1]
+    filename = f'{uuid.uuid4}{ext}'
+
+    return os.path.join('uploads', 'user', filename)
+
 class UserManager(BaseUserManager):
     """" Manager for users"""
     def create_user(self, email, first_name,
@@ -90,6 +97,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name', 'phone_number']
 
+
+class UserImage(models.Model):
+    """User images"""
+    user_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='image')
+    image = models.ImageField(null=True, upload_to=user_image_file_path)
 
 class Address(models.Model):
     address_1 = models.CharField(_("address"), max_length=128)

@@ -5,14 +5,14 @@ from django.contrib.auth import (
     authenticate)
 from django.utils.translation import gettext as _
 from rest_framework import serializers
-
+from core import models
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for user objects"""
 
     class Meta:
         model = get_user_model()
-        fields = ['email', 'first_name', 'last_name',
+        fields = ['id', 'email', 'first_name', 'last_name',
                   'phone_number', 'city', 'bio', 'studio', 'password']
         extra_kwargs = {'password': {'write_only': True, 'min_length': 8}}
 
@@ -53,3 +53,11 @@ class AuthTokenSerializer(serializers.Serializer):
             raise serializers.ValidationError(msg, code='authorization')
         attrs['user'] = user
         return attrs
+
+
+class UserImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.UserImage
+        fields = ['id', 'user_id', 'image']
+        read_only_fields = ['id']
+        extra_kwargs = {'image': {'required': True}, 'user_id': {'required': True}}
