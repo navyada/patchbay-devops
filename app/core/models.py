@@ -16,6 +16,8 @@ from django.core.exceptions import ValidationError
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils.translation import ugettext as _
 from localflavor.us.models import USStateField
+from datetime import date
+from typing import Union
 
 def listing_image_file_path(instance, filename):
     """Generate file path for new listing image"""
@@ -112,6 +114,33 @@ class Address(models.Model):
     zip_code = models.CharField(_("zip code"), max_length=5, default="90007")
 
 
+class UnavailableDate(models.Model):
+    """Model to store unavailable dates for listings"""
+    date = models.DateField()
+    # class Meta:
+        # unique_together = ('date',)
+    def clean(self):
+        """
+        Custom validation to ensure that unavailable dates are not in the past.
+        """
+        if self.date < date.today():
+            raise ValidationError(_('Unavailable date cannot be in the past.'))
+    def __str__(self):
+        return str(self.date)
+
+class Category(models.Model):
+    """ Category for filtering instruments"""
+    name = models.CharField(max_length=255)
+    parent_category = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name='child_categories'
+    )
+    def __str__(self):
+        return self.name
+
 class Listing(models.Model):
     """Listing object"""
     user = models.ForeignKey(
@@ -123,15 +152,15 @@ class Listing(models.Model):
     year = models.PositiveIntegerField(null=True)
     make = models.CharField(max_length=255, null=True)
     model = models.CharField(max_length=255, null=True)
-    replacement_value = models.DecimalField(max_digits=6, decimal_places=2, null=True)
-    category = models.ManyToManyField('Category', blank=True)
+    replacement_value_cents = models.PositiveIntegerField(null=True)
+    category = models.ManyToManyField('Category')
     address = models.ForeignKey(Address, on_delete=models.CASCADE)
-    # image = models.ForeignKey(ListingImage, on_delete=models.CASCADE)
+    unavailable_dates = models.ManyToManyField('UnavailableDate')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(null=True)
 
     @property
-    def avg_stars(self):
+    def avg_stars(self) -> Union[float, int]:
         reviews = self.listingreview_set.all()
         if reviews:
             total_stars = sum(review.stars for review in reviews)
@@ -140,7 +169,7 @@ class Listing(models.Model):
             return 0
 
     @property
-    def num_reviews(self):
+    def num_reviews(self)-> Union[float, int]:
         reviews = self.listingreview_set.all()
         if reviews:
             return len(reviews)
@@ -155,18 +184,7 @@ class ListingImage(models.Model):
     image = models.ImageField(null=True, upload_to=listing_image_file_path)
     order = models.IntegerField(default=1)
 
-class Category(models.Model):
-    """ Category for filtering instruments"""
-    name = models.CharField(max_length=255)
-    parent_category = models.ForeignKey(
-        'self',
-        null=True,
-        blank=True,
-        on_delete=models.CASCADE,
-        related_name='child_categories'
-    )
-    def __str__(self):
-        return self.name
+
 
 
 class Saved(models.Model):
@@ -224,3 +242,6 @@ class UserReview(models.Model):
     text = models.TextField(max_length=500, blank=True)
     class Meta:
         unique_together = ('lender', 'renter')
+
+
+

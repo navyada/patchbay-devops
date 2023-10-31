@@ -122,6 +122,7 @@ class ListingReadOnlyViewSet(viewsets.ReadOnlyModelViewSet):
         """Return the serializer class for request"""
         if self.action == 'list':
             return serializers.ListingSerializer
+        return self.serializer_class
 
 
 class CategoryViewSet(viewsets.ModelViewSet):

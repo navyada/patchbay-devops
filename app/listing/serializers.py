@@ -9,7 +9,8 @@ from core.models import (
     ListingReview,
     UserReview,
     Orders,
-    ListingImage)
+    ListingImage,
+    UnavailableDate)
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -24,49 +25,75 @@ class AddressSerializer(serializers.ModelSerializer):
         model = Address
         fields = ['id', 'address_1', 'address_2', 'city', 'state', 'zip_code']
         read_only_fields = ['id']
-class ListingSerializer(serializers.ModelSerializer):
-    """Serializer for listings"""
+
+
+class UnavailableDateSerializer(serializers.ModelSerializer):
+    """Serializer for unavailable dates"""
+    class Meta:
+        model = UnavailableDate
+        fields = '__all__'
+
+class ListingDetailSerializer(serializers.ModelSerializer):
+    """Serializer for listing details"""
     address = AddressSerializer()
+    unavailable_dates = UnavailableDateSerializer(many=True, required=False)
+    category = CategorySerializer(many=True, required=False)
     class Meta:
         model = Listing
-        fields = [
-            'id', 'title', 'price_cents', 'address', 'image'
-            ]
+        fields=['id', 'title', 'price_cents','description',
+                'year', 'make', 'model', 'replacement_value_cents',
+                'address', 'avg_stars', 'num_reviews',
+                'category', 'unavailable_dates']
         read_only_fields = ['id']
 
-    def _get_category(self, category, listing):
-        """Handle getting categories as needed"""
-        for cat in category:
-            listing.category.add(cat)
-
-    def create(self, validated_data):
-        """Create a listing"""
-        address_data = validated_data.pop('address', {})
-        category = validated_data.pop('category', [])
+    def _get_or_create_address(self, address_data):
         address, created = Address.objects.get_or_create(
                                             address_1=address_data['address_1'],
                                             city=address_data['city'],
                                             state=address_data['state'],
                                             zip_code=address_data['zip_code']
                                             )
+        return address
+
+    def _get_category(self, category, listing):
+        """Handle getting categories as needed"""
+        for category_data in category:
+            cat = Category.objects.get(**category_data)
+            listing.category.add(cat)
+
+    def _get_dates(self, unavailable_dates, listing):
+        for date_data in unavailable_dates:
+            date, _ = UnavailableDate.objects.get_or_create(**date_data)
+            if date not in listing.unavailable_dates.all():
+                listing.unavailable_dates.add(date)
+
+
+
+    def create(self, validated_data):
+        """Create a listing"""
+        address_data = validated_data.pop('address', {})
+        category = validated_data.pop('category', [])
+        unavailable_dates_data = validated_data.pop('unavailable_dates', [])
+        address = self._get_or_create_address(address_data)
         listing = Listing.objects.create(address=address, **validated_data)
         self._get_category(category, listing)
+        self._get_dates(unavailable_dates_data, listing)
         return listing
 
     def update(self, instance, validated_data):
         """Update a listing"""
         address_data = validated_data.pop('address', None)
         if address_data:
-            address, created = Address.objects.get_or_create(
-                                address_1=address_data['address_1'],
-                                city=address_data['city'],
-                                state=address_data['state'],
-                                zip_code=address_data['zip_code'])
+            address = self._get_or_create_address(address_data)
             validated_data['address'] = address
         category = validated_data.pop('category', None)
         if category is not None:
             instance.category.clear()
             self._get_category(category, instance)
+        unavailable_dates_data = validated_data.pop('unavailable_dates', None)
+        if unavailable_dates_data is not None:
+            instance.unavailable_dates.clear()
+            self._get_dates(unavailable_dates_data, instance)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.updated_at = timezone.now()
@@ -74,13 +101,13 @@ class ListingSerializer(serializers.ModelSerializer):
         return instance
 
 
-class ListingDetailSerializer(ListingSerializer):
-    """Serializer for listing details"""
-    class Meta(ListingSerializer.Meta):
-        fields=['id', 'title', 'price_cents','description',
-                'year', 'make', 'model', 'replacement_value',
-                'address', 'image', 'avg_stars', 'num_reviews',
-                'category']
+class ListingSerializer(ListingDetailSerializer):
+    """Serializer for listings"""
+    class Meta(ListingDetailSerializer.Meta):
+        fields = [
+            'id', 'title', 'price_cents', 'address', 'image'
+            ]
+
 
 class SavedSerializer(serializers.ModelSerializer):
     """Serializer for Saved model"""
@@ -140,3 +167,4 @@ class ListingImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'listing', 'image']
         read_only_fields = ['id']
         extra_kwargs = {'image': {'required': True}}
+
