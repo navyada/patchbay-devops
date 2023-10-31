@@ -17,6 +17,7 @@ router.register('listingreviewreadonly', views.ListingReviewReadOnlyViewSet, bas
 router.register('orders', views.OrdersViewSet, basename='orders')
 router.register('userreview', views.UserReviewViewSet, basename='userreview')
 router.register('userreviewreadonly', views.UserReviewReadOnlyViewSet, basename='userreviewreadonly')
+router.register('upload-image', views.ListingImageViewSet, basename='upload-image')
 app_name = 'listing'
 urlpatterns = [path("", include(router.urls))]
 

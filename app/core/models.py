@@ -126,9 +126,34 @@ class Listing(models.Model):
     replacement_value = models.DecimalField(max_digits=6, decimal_places=2, null=True)
     category = models.ManyToManyField('Category', blank=True)
     address = models.ForeignKey(Address, on_delete=models.CASCADE)
-    image = models.ImageField(null=True, upload_to = listing_image_file_path)
+    # image = models.ForeignKey(ListingImage, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(null=True)
+
+    @property
+    def avg_stars(self):
+        reviews = self.listingreview_set.all()
+        if reviews:
+            total_stars = sum(review.stars for review in reviews)
+            return total_stars / len(reviews)
+        else:
+            return 0
+
+    @property
+    def num_reviews(self):
+        reviews = self.listingreview_set.all()
+        if reviews:
+            return len(reviews)
+        else:
+            return 0
     def __str__(self):
         return self.title
+
+class ListingImage(models.Model):
+    """Listing images"""
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='image')
+    image = models.ImageField(null=True, upload_to=listing_image_file_path)
+    order = models.IntegerField(default=1)
 
 class Category(models.Model):
     """ Category for filtering instruments"""
@@ -142,8 +167,6 @@ class Category(models.Model):
     )
     def __str__(self):
         return self.name
-
-
 
 
 class Saved(models.Model):

@@ -6,14 +6,14 @@ from django.contrib.auth import (
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 from core import models
-
+from django.utils import timezone
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for user objects"""
 
     class Meta:
         model = get_user_model()
         fields = ['id', 'email', 'first_name', 'last_name',
-                  'phone_number', 'city', 'bio', 'studio', 'password']
+                  'phone_number', 'city', 'bio', 'studio', 'password', 'last_login', 'created_at']
         extra_kwargs = {'password': {'write_only': True, 'min_length': 8}}
 
     def create(self, validated_data):
@@ -24,10 +24,11 @@ class UserSerializer(serializers.ModelSerializer):
         """Update and return a user"""
         password = validated_data.pop('password', None)
         user = super().update(instance, validated_data)
-
         if password:
             user.set_password(password)
             user.save()
+        user.updated_at = timezone.now()
+        user.save(update_fields=['updated_at'])
         return user
 
 
@@ -51,6 +52,8 @@ class AuthTokenSerializer(serializers.Serializer):
         if not user:
             msg = _('Unable to authenticate user with provided credentials')
             raise serializers.ValidationError(msg, code='authorization')
+        user.last_login = timezone.now()
+        user.save(update_fields=['last_login'])
         attrs['user'] = user
         return attrs
 

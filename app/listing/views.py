@@ -23,7 +23,8 @@ from core.models import (
     Saved,
     ListingReview,
     Orders,
-    UserReview)
+    UserReview,
+    ListingImage)
 from listing import serializers
 from rest_framework import status
 
@@ -53,24 +54,50 @@ class ListingViewSet(viewsets.ModelViewSet):
         """Return the serializer class for request"""
         if self.action == 'list':
             return serializers.ListingSerializer
-        elif self.action == 'upload_image':
-            return serializers.ListingImageSerializer
         return self.serializer_class
 
     def perform_create(self, serializer):
         """Create a new listing"""
         serializer.save(user=self.request.user)
 
+
+class ListingImageViewSet(viewsets.ModelViewSet):
+    """Viewset for listing images"""
+    serializer_class = serializers.ListingImageSerializer
+    queryset = ListingImage.objects.all()
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        """Retrieve images for listing in question"""
+        listing_id = self.request.query_params.get('listing')
+        if listing_id:
+            return self.queryset.filter(listing=listing_id).order_by('-id')
+        return self.queryset.none()
+
     @action(methods=['POST'], detail=True, url_path='upload-image')
     def upload_image(self, request, pk=None):
         """Upload an image to listing"""
-        listing = self.get_object()
-        serializer = self.get_serializer(listing, data=request.data)
+        listing_id = self.request.query_params.get('listing')
+        if not listing_id:
+            return Response(
+                            {'detail': 'Please provide a listing ID in the query parameters.'},
+                            status=status.HTTP_400_BAD_REQUEST
+                            )
+        try:
+            listing = Listing.objects.get(id=listing_id)
+        except Listing.DoesNotExist:
+            return Response({'detail': 'Listing not found.'}, status=status.HTTP_404_NOT_FOUND)
+        owner = listing.user
+        if self.request.user != owner:
+            return Response(
+                    {'detail': 'User does not have permission to upload images to this listing.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                    )
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(listing=listing)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class ListingReadOnlyViewSet(viewsets.ReadOnlyModelViewSet):
     """
@@ -143,7 +170,10 @@ class ListingReviewViewSet(viewsets.ModelViewSet):
 
         if listing.user == request.user:
             return Response({"error": "You cannot review your own listing"}, status=status.HTTP_400_BAD_REQUEST)
-
+        try:
+            order = Orders.objects.get(user=self.request.user, listing=listing, status='Approved')
+        except Orders.DoesNotExist:
+            return Response({"error": "User can only review listings they have ordered"}, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()

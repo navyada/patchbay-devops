@@ -8,7 +8,8 @@ from core.models import (
     Saved,
     ListingReview,
     UserReview,
-    Orders)
+    Orders,
+    ListingImage)
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -29,14 +30,19 @@ class ListingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Listing
         fields = [
-            'id', 'title', 'price_cents', 'address'
+            'id', 'title', 'price_cents', 'address', 'image'
             ]
         read_only_fields = ['id']
 
+    def _get_category(self, category, listing):
+        """Handle getting categories as needed"""
+        for cat in category:
+            listing.category.add(cat)
 
     def create(self, validated_data):
         """Create a listing"""
-        address_data = validated_data.pop('address', {})  # Remove address data from validated_data
+        address_data = validated_data.pop('address', {})
+        category = validated_data.pop('category', [])
         address, created = Address.objects.get_or_create(
                                             address_1=address_data['address_1'],
                                             city=address_data['city'],
@@ -44,11 +50,12 @@ class ListingSerializer(serializers.ModelSerializer):
                                             zip_code=address_data['zip_code']
                                             )
         listing = Listing.objects.create(address=address, **validated_data)
+        self._get_category(category, listing)
         return listing
 
     def update(self, instance, validated_data):
         """Update a listing"""
-        address_data = validated_data.pop('address', {})
+        address_data = validated_data.pop('address', None)
         if address_data:
             address, created = Address.objects.get_or_create(
                                 address_1=address_data['address_1'],
@@ -56,9 +63,13 @@ class ListingSerializer(serializers.ModelSerializer):
                                 state=address_data['state'],
                                 zip_code=address_data['zip_code'])
             validated_data['address'] = address
+        category = validated_data.pop('category', None)
+        if category is not None:
+            instance.category.clear()
+            self._get_category(category, instance)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-
+        instance.updated_at = timezone.now()
         instance.save()
         return instance
 
@@ -68,7 +79,8 @@ class ListingDetailSerializer(ListingSerializer):
     class Meta(ListingSerializer.Meta):
         fields=['id', 'title', 'price_cents','description',
                 'year', 'make', 'model', 'replacement_value',
-                'address', 'image']
+                'address', 'image', 'avg_stars', 'num_reviews',
+                'category']
 
 class SavedSerializer(serializers.ModelSerializer):
     """Serializer for Saved model"""
@@ -104,7 +116,7 @@ class OrdersSerializer(serializers.ModelSerializer):
                   'created_at', 'updated_at']
 
     def create(self, validated_data):
-        num_days_rented = (validated_data['end_date'] - validated_data['start_date']).days
+        num_days_rented = (validated_data['end_date'] - validated_data['start_date']).days + 1
         subtotal_price = validated_data['listing'].price_cents * num_days_rented
         validated_data['subtotal_price'] = subtotal_price
         listing = validated_data['listing']
@@ -122,10 +134,9 @@ class OrdersSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-
 class ListingImageSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Listing
-        fields = ['id', 'image']
+        model = ListingImage
+        fields = ['id', 'listing', 'image']
         read_only_fields = ['id']
         extra_kwargs = {'image': {'required': True}}
