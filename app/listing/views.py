@@ -68,15 +68,16 @@ class ListingImageViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     def get_queryset(self):
-        """Retrieve images for listing in question"""
-        listing_id = self.request.query_params.get('listing')
-        if listing_id:
-            return self.queryset.filter(listing=listing_id).order_by('-id')
-        return self.queryset.none()
+        user = self.request.user
+        # listing = self.request.query_params.get('listing')
+        user_listings = Listing.objects.get(user=user)
+        return self.queryset.filter(listing=user_listings)
 
     @action(methods=['POST'], detail=True, url_path='upload-image')
     def upload_image(self, request, pk=None):
+    # def create(self, request):
         """Upload an image to listing"""
+        print(request.query_params)
         listing_id = self.request.query_params.get('listing')
         if not listing_id:
             return Response(
@@ -201,13 +202,13 @@ class UserReviewViewSet(viewsets.ModelViewSet):
         renter_id = request.data.get('renter')
         lender_id = request.data.get('lender')
         try:
-            order = Orders.objects.get(lender=lender_id)
+            order = Orders.objects.get(lender=lender_id, user=renter_id, status='Approved')
         except Orders.DoesNotExist:
-            return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
-
+            return Response({"error": "You can only review users who have rented from you"}, status=status.HTTP_404_NOT_FOUND)
         if lender_id == renter_id:
             return Response({"error": "You cannot review yourself"}, status=status.HTTP_400_BAD_REQUEST)
-
+        if not User.objects.get(lender_id).is_lender():
+            return Response({"error": "Only lenders can write reviews for their customers"}, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()

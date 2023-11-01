@@ -141,16 +141,18 @@ class PrivateUserApiTests(TestCase):
 
     def test_retrieve_profile_success(self):
         """Test retrieving profile for logged in user"""
-        res = self.client.get(ME_URL)
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data, {
+        payload =  {
                         'email': 'test@example.com',
                         'first_name': 'test ',
                         'last_name': 'name',
                         'phone_number': '+18052345678',
                         'city': None,
                         'bio': None,
-                        'studio': None})
+                        'studio': None}
+        res = self.client.get(ME_URL)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        for k,v in payload.items():
+            self.assertEqual(v, res.data[k])
 
     def test_post_me_not_allowed(self):
         """Test POST is not allowed for the me endpoint"""

@@ -49,6 +49,19 @@ def create_user(**params):
     """Create and return a new user"""
     return get_user_model().objects.create_user(**params)
 
+def create_order(self, **params):
+    default = {
+        'user': self.user,
+        'listing': self.listing,
+        'requested_date': '2023-10-31',
+        'start_date': '2023-10-31',
+        'end_date': '2023-11-01',
+        'status': 'Approved'
+
+    }
+    default.update(params)
+    order = Orders.objects.create(**default)
+    return order
 
 ### Tests for listing reviews ###
 class PublicListingReviewApiTests(TestCase):
@@ -83,8 +96,10 @@ class PrivateListingReviewAPITests(TestCase):
                 )
         self.listing = create_listing(user=self.user1)
 
+
     def test_create_review(self):
         """Test creating a review"""
+        create_order(self)
         payload = {
             'user':self.user.id,
             'listing':self.listing.id,

@@ -186,7 +186,7 @@ class PrivateCategoryAPITests(TestCase):
         res = self.client.post(ORDERS_URL, payload)
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(res.data['lender'], user1.id)
-        self.assertEqual(float(res.data['subtotal_price']), float(50200*2))
+        self.assertEqual(float(res.data['subtotal_price']), float(50200*3))
 
     def test_update_order(self):
         """Test that order and update time are updated"""

@@ -10,7 +10,9 @@ from core.models import (
     UserReview,
     Orders,
     ListingImage,
-    UnavailableDate)
+    UnavailableDate,
+    )
+from datetime import timedelta
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -44,7 +46,7 @@ class ListingDetailSerializer(serializers.ModelSerializer):
                 'year', 'make', 'model', 'replacement_value_cents',
                 'address', 'avg_stars', 'num_reviews',
                 'category', 'unavailable_dates']
-        read_only_fields = ['id']
+        read_only_fields = ['id', 'avg_stars', 'num_reviews']
 
     def _get_or_create_address(self, address_data):
         address, created = Address.objects.get_or_create(
@@ -141,6 +143,7 @@ class OrdersSerializer(serializers.ModelSerializer):
                   'requested_date', 'start_date', 'end_date',
                   'status', 'lender_response', 'subtotal_price',
                   'created_at', 'updated_at']
+        read_only_fields = ['id', 'subtotal_price', 'lender']
 
     def create(self, validated_data):
         num_days_rented = (validated_data['end_date'] - validated_data['start_date']).days + 1
@@ -150,16 +153,37 @@ class OrdersSerializer(serializers.ModelSerializer):
         validated_data['lender'] = listing.user
         if validated_data['user'] == validated_data['lender']:
             raise serializers.ValidationError("The user and the lender cannot be the same.", code=status.HTTP_400_BAD_REQUEST)
-        # Create the Orders instance with the updated data
+        start_date = validated_data.get('start_date')
+        end_date = validated_data.get('end_date')
+        listing = validated_data.get('listing')
+
+        # Get a list of unavailable dates for the listing
+        unavailable_dates = listing.unavailable_dates.values_list('date', flat=True)
+        dates_between = [start_date + timedelta(days=x) for x in range((end_date - start_date).days + 1)]
+        unavailable_dates_set = set(unavailable_dates)
+        overlapping_dates = [date for date in dates_between if date in unavailable_dates_set]
+
+        if overlapping_dates:
+            raise serializers.ValidationError("The selected dates are unavailable for this listing.")
+
         order = Orders.objects.create(**validated_data)
         return order
 
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+        if 'status' in validated_data:
+            if validated_data['status'] == 'Approved':
+                dates_between = [instance.start_date + timedelta(days=x) for x in
+                                range((instance.end_date - instance.start_date).days + 1)]
+                for date_data in dates_between:
+                    date, _ = UnavailableDate.objects.get_or_create(date=date_data)
+                    if date not in instance.listing.unavailable_dates.all():
+                        instance.listing.unavailable_dates.add(date)
         instance.updated_at = timezone.now()
         instance.save()
         return instance
+
 
 class ListingImageSerializer(serializers.ModelSerializer):
     class Meta:

@@ -16,17 +16,19 @@ from rest_framework.test import APIClient
 from core.models import (
     Listing,
     Category,
-    Address
+    Address,
+    ListingImage
     )
 from listing.serializers import (
     ListingSerializer,
     ListingDetailSerializer,
-    AddressSerializer
+    AddressSerializer,
+
     )
 
 LISTINGS_URL = reverse('listing:listing-list')
 READ_LISTINGS_URL = reverse('listing:listingreadonly-list')
-
+IMAGE_URL = reverse('listing:uploadimage-list')
 def detail_url(id):
     """Create and return URL for detailed listing"""
     return reverse('listing:listing-detail', args=[id])
@@ -51,7 +53,7 @@ def create_user(**params):
 
 def image_upload_url(listing_id):
     """Create and return image upload url"""
-    return reverse('listing:listing-upload-image', args=[listing_id])
+    return reverse('listing:uploadimage-list', args=[listing_id])
 
 class PublicListingAPITests(TestCase):
     """Test unauthenticated API Requests"""
@@ -143,7 +145,7 @@ class PrivateListingAPITests(TestCase):
     def test_retrieve_listing_details(self):
         """Test retriving a list of listings"""
         listing = create_listing(user=self.user,
-                       replacement_value=Decimal('100.00'),
+                       replacement_value_cents=10000,
                        make='Fender',
                        year=2021
                        )
@@ -288,7 +290,7 @@ class PrivateListingAPITests(TestCase):
         'title': 'Sample Title',
         'price_cents': 50200,
         'description': 'Sample Description',
-        'category': [category.id],
+        'category': [{'name': 'Drums'}],
         'address': {'address_1':'1197 W 36th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
         }
         res = self.client.post(LISTINGS_URL, payload, format='json')
@@ -412,29 +414,28 @@ class ImageUploadTests(TestCase):
         self.client.force_authenticate(self.user)
         self.listing = create_listing(user=self.user)
 
-    def tearDown(self):
-        self.listing.image.delete()
+    # def tearDown(self):
+    #     self.listing.image.delete()
 
 
     def test_upload_image(self):
         """Test uploading an image to listing"""
-        url = image_upload_url(self.listing.id)
         with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
             img = Image.new('RGB', (10,10))
             img.save(image_file, format='JPEG')
             image_file.seek(0)
-            payload = {'image': image_file}
-            res = self.client.post(url, payload, format='multipart')
+            payload = {'listing':self.listing.id, 'image': image_file}
+            res = self.client.post(IMAGE_URL, payload, format='multipart')
 
         self.listing.refresh_from_db()
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertIn('image', res.data)
-        self.assertTrue(os.path.exists(self.listing.image.path))
+        ListingImage.objects.get(id=res.data['id']).delete()
 
     def test_upload_image_bad_request(self):
         """Test uploading invalid image to listing"""
         url = image_upload_url(self.listing.id)
         payload = {'image': 'notanimage'}
-        res = self.client.post(url, payload, format='multipart')
+        res = self.client.post(IMAGE_URL, payload, format='multipart')
 
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)

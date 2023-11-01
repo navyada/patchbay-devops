@@ -200,6 +200,7 @@ class ListingReview(models.Model):
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE)
     stars = models.IntegerField(default=0)
     text = models.TextField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     class Meta:
         unique_together = ('user', 'listing')
 
@@ -230,7 +231,7 @@ class Orders(models.Model):
     end_date = models.DateField()
     status = models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, default=ORDER_STATUS_PENDING)
     lender_response = models.CharField(max_length=20, choices=LENDER_RESPONSE_CHOICES, null=True, blank=True)
-    subtotal_price = models.DecimalField(max_digits=10, decimal_places=2, null=True)
+    subtotal_price = models.PositiveIntegerField( null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
