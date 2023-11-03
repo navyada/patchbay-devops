@@ -13,3 +13,10 @@ app/*/*/*/__pychache__/
 .env/
 .venv/
 venv/
+
+docker-compose.yml
+README.md
+.git/
+.gitignore
+vol/
+deploy/

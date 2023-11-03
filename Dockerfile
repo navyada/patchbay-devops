@@ -2,10 +2,10 @@ FROM python:3.9-alpine3.13
 LABEL maintainer='navyada'
 
 ENV PYTHONUNBUFFERED 1
-
+ENV PATH="/scripts:${PATH}"
 COPY ./requirements.txt /tmp/requirements.txt
 COPY ./requirements.dev.txt /tmp/requirements.dev.txt
-# COPY ./scripts /scripts
+COPY ./scripts /scripts
 COPY ./app /app
 WORKDIR /app
 EXPOSE 8000
@@ -29,10 +29,10 @@ RUN python -m venv /py && \
     mkdir -p /vol/web/media && \
     mkdir -p /vol/web/static && \
     chown -R django-user:django-user /vol && \
-    chmod -R 755 /vol
-    # chmod -R +x /scripts
-ENV PATH="/py/bin:$PATH"
+    chmod -R 755 /vol && \
+    chmod -R +x /scripts
+# ENV PATH="/py/bin:$PATH"
 
 USER django-user
-
-# CMD ["run.sh"]
+VOLUME /vol/web
+CMD ["entrypoint.sh"]
