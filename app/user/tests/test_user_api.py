@@ -8,7 +8,6 @@ from rest_framework.test import APIClient
 from rest_framework import status
 
 import tempfile
-import os
 from PIL import Image
 from core.models import UserImage
 
@@ -16,9 +15,12 @@ CREATE_USER_URL = reverse('user:create')
 TOKEN_URL = reverse('user:token')
 ME_URL = reverse('user:me')
 IMAGE_URL = reverse('user:upload-list')
+
+
 def image_upload_url(user_id):
     """Create and return the user image upload url"""
     return reverse('user:upload-detail', args=[user_id])
+
 
 def create_user(**params):
     """Create and return a new user"""
@@ -141,7 +143,7 @@ class PrivateUserApiTests(TestCase):
 
     def test_retrieve_profile_success(self):
         """Test retrieving profile for logged in user"""
-        payload =  {
+        payload = {
                         'email': 'test@example.com',
                         'first_name': 'test ',
                         'last_name': 'name',
@@ -151,7 +153,7 @@ class PrivateUserApiTests(TestCase):
                         'studio': None}
         res = self.client.get(ME_URL)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        for k,v in payload.items():
+        for k, v in payload.items():
             self.assertEqual(v, res.data[k])
 
     def test_post_me_not_allowed(self):
@@ -170,12 +172,11 @@ class PrivateUserApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
 
 
-
 class ImageUploadTests(TestCase):
     """Tests for the image upload API"""
 
     def setUp(self):
-        self.client=APIClient()
+        self.client = APIClient()
         self.user = create_user(email='test@example.com',
                                 first_name='Joe',
                                 last_name='Smith',
@@ -190,10 +191,10 @@ class ImageUploadTests(TestCase):
         """Test uploading an image to user"""
         # url = image_upload_url(self.user.id)
         with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
-            img = Image.new('RGB', (10,10))
+            img = Image.new('RGB', (10, 10))
             img.save(image_file, format='JPEG')
             image_file.seek(0)
-            payload = {'user_id':self.user.id, 'image': image_file}
+            payload = {'user_id': self.user.id, 'image': image_file}
             res = self.client.post(IMAGE_URL, payload, format='multipart')
 
         # self.user.refresh_from_db()
@@ -204,23 +205,23 @@ class ImageUploadTests(TestCase):
     def test_upload_image_bad_request(self):
         """Test uploading invalid image to user"""
         # url = image_upload_url(self.user.id)
-        payload = {'user_id':self.user.id, 'image': 'notanimage'}
+        payload = {'user_id': self.user.id, 'image': 'notanimage'}
         res = self.client.post(IMAGE_URL, payload, format='multipart')
 
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_reupload_image(self):
         with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file1:
-            img = Image.new('RGB', (10,10))
+            img = Image.new('RGB', (10, 10))
             img.save(image_file1, format='JPEG')
             image_file1.seek(0)
-            payload = {'user_id':self.user.id, 'image': image_file1}
+            payload = {'user_id': self.user.id, 'image': image_file1}
             res1 = self.client.post(IMAGE_URL, payload, format='multipart')
         with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file2:
-            img = Image.new('RGB', (10,10))
+            img = Image.new('RGB', (10, 10))
             img.save(image_file2, format='JPEG')
             image_file2.seek(0)
-            payload = {'user_id':self.user.id, 'image': image_file2}
+            payload = {'user_id': self.user.id, 'image': image_file2}
             res2 = self.client.post(IMAGE_URL, payload, format='multipart')
         self.assertEqual(res2.status_code, status.HTTP_201_CREATED)
         self.assertIn('image', res2.data)

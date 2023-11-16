@@ -17,9 +17,12 @@ from core.models import (
 
 
 SAVED_URL = reverse('listing:saved-list')
+
+
 def detail_url(id):
     """Create and return URL for detailed listing"""
     return reverse('listing:listing-detail', args=[id])
+
 
 def create_listing(user, **params):
     """Create and return a sample listing"""
@@ -27,7 +30,10 @@ def create_listing(user, **params):
         'title': 'Sample Title',
         'price_cents': 50200,
         'description': 'Sample Description',
-        'address': {'address_1':'1197 W 37th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
+        'address': {'address_1': '1197 W 37th St',
+                    'city': 'Los Angeles',
+                    'state': 'CA',
+                    'zip_code': '90007'}
     }
     default.update(params)
     address = default.pop('address', None)
@@ -35,9 +41,11 @@ def create_listing(user, **params):
     listing = Listing.objects.create(user=user, address=address, **default)
     return listing
 
+
 def create_user(**params):
     """Create and return a new user"""
     return get_user_model().objects.create_user(**params)
+
 
 class PublicSavedApiTests(TestCase):
     """Test unauthenticated API Requests"""
@@ -65,7 +73,12 @@ class PrivateSavedAPITests(TestCase):
         self.client.force_authenticate(self.user)
 
     def test_save_listing(self):
-        user = create_user(email='test1@example.com', first_name='Mary', last_name='Jane', phone_number='8054394922', password='Test12356')
+        user = create_user(
+            email='test1@example.com',
+            first_name='Mary',
+            last_name='Jane',
+            phone_number='8054394922',
+            password='Test12356')
         listing = create_listing(user=user)
         payload = {'user': self.user.id, 'listing': listing.id}
         res = self.client.post(SAVED_URL, payload)
@@ -74,7 +87,13 @@ class PrivateSavedAPITests(TestCase):
 
     def test_delete_saved_listing(self):
         """Test unsaving a listing"""
-        user = create_user(email='test1@example.com', first_name='Mary', last_name='Jane', phone_number='8054394922', password='Test12356')
+        user = create_user(
+            email='test1@example.com',
+            first_name='Mary',
+            last_name='Jane',
+            phone_number='8054394922',
+            password='Test12356'
+            )
         listing = create_listing(user=user)
         saved = Saved.objects.create(user=self.user, listing=listing)
         url = reverse('listing:saved-detail', args=[saved.id])
@@ -83,7 +102,13 @@ class PrivateSavedAPITests(TestCase):
 
     def test_list_only_users_saved_listing(self):
         """Test list is limited to authenticated user"""
-        user = create_user(email='test1@example.com', first_name='Mary', last_name='Jane', phone_number='8054394922', password='Test12356')
+        user = create_user(
+            email='test1@example.com',
+            first_name='Mary',
+            last_name='Jane',
+            phone_number='8054394922',
+            password='Test12356'
+            )
         listing = create_listing(user=user)
         Saved.objects.create(user=user, listing=listing)
         Saved.objects.create(user=self.user, listing=listing)

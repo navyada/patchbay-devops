@@ -1,11 +1,5 @@
 """Tests for listing api"""
 
-from decimal import Decimal
-import tempfile
-import os
-
-from PIL import Image
-
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -17,19 +11,18 @@ from core.models import (
     Listing,
     Category
     )
-from listing.serializers import (
-    ListingSerializer,
-    ListingDetailSerializer
-    )
+
 
 LISTINGS_URL = reverse('listing:listing-list')
 READ_LISTINGS_URL = reverse('listing:listingreadonly-list')
 CATEGORY_URL = reverse('listing:category-list')
 READ_CATEGORY_URL = reverse('listing:categoryreadonly-list')
 
+
 def detail_url(id):
     """Create and return URL for detailed listing"""
     return reverse('listing:listing-detail', args=[id])
+
 
 def create_listing(user, **params):
     """Create and return a sample listing"""
@@ -41,6 +34,7 @@ def create_listing(user, **params):
     default.update(params)
     listing = Listing.objects.create(user=user, **default)
     return listing
+
 
 def create_user(**params):
     """Create and return a new user"""
@@ -56,6 +50,8 @@ class PublicCategoryAPITests(TestCase):
     def test_auth_not_required(self):
         res = self.client.get(READ_CATEGORY_URL)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+
 class PrivateListingAPITests(TestCase):
     """Test authenticated API Requests"""
     def setUp(self):
@@ -69,10 +65,10 @@ class PrivateListingAPITests(TestCase):
         self.client.force_authenticate(self.user)
 
     def test_create_category_error(self):
-            """Test creating a category"""
-            payload = {'name': 'Parent' }
-            res = self.client.post(CATEGORY_URL, payload)
-            self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        """Test creating a category"""
+        payload = {'name': 'Parent'}
+        res = self.client.post(CATEGORY_URL, payload)
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class AdminPrivateCategoryAPITests(TestCase):
@@ -88,17 +84,17 @@ class AdminPrivateCategoryAPITests(TestCase):
         self.client.force_authenticate(self.user)
 
     def test_create_category_successful(self):
-            """Test creating a category"""
-            payload = {'name': 'Parent' }
-            res = self.client.post(CATEGORY_URL, payload)
-            self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-            payload = {'name': 'Child', 'parent_category': res.data['id']}
-            child = self.client.post(CATEGORY_URL, payload)
-            self.assertEqual(child.status_code, status.HTTP_201_CREATED)
-            self.assertEqual(len(Category.objects.all()), 2)
+        """Test creating a category"""
+        payload = {'name': 'Parent'}
+        res = self.client.post(CATEGORY_URL, payload)
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        payload = {'name': 'Child', 'parent_category': res.data['id']}
+        child = self.client.post(CATEGORY_URL, payload)
+        self.assertEqual(child.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(len(Category.objects.all()), 2)
 
     def test_read_category_successful(self):
-        payload = {'name': 'Parent' }
+        payload = {'name': 'Parent'}
         res = self.client.post(CATEGORY_URL, payload)
         res = self.client.get(CATEGORY_URL)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
@@ -106,7 +102,7 @@ class AdminPrivateCategoryAPITests(TestCase):
     def test_update_category(self):
         """Test updating a category"""
         category = Category.objects.create(name='Name')
-        payload = {'name':'New Name'}
+        payload = {'name': 'New Name'}
         url = reverse('listing:category-detail', args=[category.id])
         res = self.client.patch(url, payload)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
