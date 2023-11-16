@@ -24,13 +24,6 @@ Test and Lint:
   rules:
     - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(master|production)$/ || $CI_COMMIT_BRANCH =~ /^(master|production)$/'
 
-
-  stage: Test and Lint
-  script:
-    - echo "Test and Lint"
-  rules:
-    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|production)$/ || $CI_COMMIT_BRANCH =~ /^(main|production)$/'
-
 Validate Terraform:
   stage: Test and Lint
   script:
