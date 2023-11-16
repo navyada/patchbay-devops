@@ -18,7 +18,7 @@ Test and Lint:
   services:
     - docker:19.03.5-dind
   stage: Test and Lint
-  script: # UPDATE! the below lines have changed from the video. See next lesson for more details.
+  script:
     - apk add --update docker-compose
     - docker-compose run --rm app sh -c "python manage.py wait_for_db && python manage.py test && flake8"
   rules:
