@@ -57,7 +57,6 @@ Build and Push:
   rules:
     - if: '$CI_COMMIT_BRANCH =~ /^(master|production)$/'
 
-
 Staging Plan:
   stage: Staging Plan
   script:
@@ -68,7 +67,6 @@ Staging Plan:
     - terraform plan
   rules:
     - if: '$CI_COMMIT_BRANCH =~ /^(master|production)$/'
-
 
 Staging Apply:
   stage: Staging Apply
@@ -81,7 +79,6 @@ Staging Apply:
   rules:
     - if: '$CI_COMMIT_BRANCH =~ /^(master|production)$/'
 
-
 Production Plan:
   stage: Production Plan
   script:
@@ -92,7 +89,6 @@ Production Plan:
     - terraform plan
   rules:
     - if: '$CI_COMMIT_BRANCH == "production"'
-
 
 Production Apply:
   stage: Production Apply
@@ -106,19 +102,25 @@ Production Apply:
     - if: '$CI_COMMIT_BRANCH == "production"'
       when: manual
 
-
 Staging Destroy:
   stage: Destroy
   script:
-    - echo "Run Terraform Destroy for Staging"
+    - cd deploy/
+    - terraform init
+    - terraform workspace select staging
+    - terraform destroy -auto-approve
   rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^(main|production)$/'
+    - if: '$CI_COMMIT_BRANCH =~ /^(master|production)$/'
       when: manual
 
 Production Destroy:
   stage: Destroy
   script:
-    - echo "Run Terraform Destroy for Production"
+    - cd deploy/
+    - terraform init
+    - terraform workspace select production
+    - terraform destroy -auto-approve
   rules:
     - if: '$CI_COMMIT_BRANCH == "production"'
       when: manual
+
