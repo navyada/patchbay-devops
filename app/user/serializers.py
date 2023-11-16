@@ -7,15 +7,19 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 from core import models
 from django.utils import timezone
+
+
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for user objects"""
 
     class Meta:
         model = get_user_model()
         fields = ['id', 'email', 'first_name', 'last_name',
-                  'phone_number', 'city', 'bio', 'studio', 'password', 'last_login', 'created_at']
+                  'phone_number', 'city', 'bio', 'studio',
+                  'password', 'last_login', 'created_at']
         extra_kwargs = {'password': {'write_only': True, 'min_length': 8}}
         read_only_fields = ['id', 'last_login', 'created_at']
+
     def create(self, validated_data):
         """Create and return a user with encrypted password"""
         return get_user_model().objects.create_user(**validated_data)
@@ -63,4 +67,7 @@ class UserImageSerializer(serializers.ModelSerializer):
         model = models.UserImage
         fields = ['id', 'user_id', 'image']
         read_only_fields = ['id']
-        extra_kwargs = {'image': {'required': True}, 'user_id': {'required': True}}
+        extra_kwargs = {
+            'image': {'required': True},
+            'user_id': {'required': True}
+            }

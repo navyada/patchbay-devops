@@ -1,8 +1,6 @@
 """Tests for listing api"""
 
-from decimal import Decimal
 import tempfile
-import os
 
 from PIL import Image
 
@@ -22,16 +20,17 @@ from core.models import (
 from listing.serializers import (
     ListingSerializer,
     ListingDetailSerializer,
-    AddressSerializer,
-
     )
 
 LISTINGS_URL = reverse('listing:listing-list')
 READ_LISTINGS_URL = reverse('listing:listingreadonly-list')
 IMAGE_URL = reverse('listing:uploadimage-list')
+
+
 def detail_url(id):
     """Create and return URL for detailed listing"""
     return reverse('listing:listing-detail', args=[id])
+
 
 def create_listing(user, **params):
     """Create and return a sample listing"""
@@ -39,7 +38,10 @@ def create_listing(user, **params):
         'title': 'Sample Title',
         'price_cents': 50200,
         'description': 'Sample Description',
-        'address': {'address_1':'1197 W 36th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
+        'address': {'address_1': '1197 W 36th St',
+                    'city': 'Los Angeles',
+                    'state': 'CA',
+                    'zip_code': '90007'}
     }
     default.update(params)
     address = default.pop('address', None)
@@ -47,13 +49,16 @@ def create_listing(user, **params):
     listing = Listing.objects.create(user=user, address=address, **default)
     return listing
 
+
 def create_user(**params):
     """Create and return a new user"""
     return get_user_model().objects.create_user(**params)
 
+
 def image_upload_url(listing_id):
     """Create and return image upload url"""
     return reverse('listing:uploadimage-list', args=[listing_id])
+
 
 class PublicListingAPITests(TestCase):
     """Test unauthenticated API Requests"""
@@ -68,40 +73,46 @@ class PublicListingAPITests(TestCase):
 
     def test_view_only(self):
         """Test if view is allowed with no user authentication"""
-        user = create_user(email='test1@example.com',
-                                first_name='Joey',
-                                last_name='Smith',
-                                phone_number='8053394923',
-                                password='testpass123')
+        user = create_user(
+                            email='test1@example.com',
+                            first_name='Joey',
+                            last_name='Smith',
+                            phone_number='8053394923',
+                            password='testpass123')
         create_listing(user=user)
         res = self.client.get(READ_LISTINGS_URL)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 1)
 
     def test_update_delete_in_view_only_error(self):
-        """Test that you cannot post/patch/delete anything from read only view"""
+        """Test that you cannot post/patch/delete
+        anything from read only view"""
         payload = {
-        'title': 'Sample Title',
-        'price_cents': 50200,
-        'description': 'Sample Description',
-        'address': {'address_1':'1197 W 36th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
-    }
+                    'title': 'Sample Title',
+                    'price_cents': 50200,
+                    'description': 'Sample Description',
+                    'address': {'address_1': '1197 W 36th St',
+                                'city': 'Los Angeles',
+                                'state': 'CA',
+                                'zip_code': '90007'}}
         res = self.client.post(READ_LISTINGS_URL, payload, format='json')
         self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
-        user = create_user(email='test1@example.com',
-                                first_name='Joey',
-                                last_name='Smith',
-                                phone_number='8053394923',
-                                password='testpass123')
+        user = create_user(
+                            email='test1@example.com',
+                            first_name='Joey',
+                            last_name='Smith',
+                            phone_number='8053394923',
+                            password='testpass123')
         listing = create_listing(user=user)
-        payload = {'title':'new title'}
+        payload = {'title': 'new title'}
         url = reverse('listing:listing-detail', args=[listing.id])
         res = self.client.patch(url, payload)
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
         res = self.client.delete(url)
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
 
 class PrivateListingAPITests(TestCase):
     """Test authenticated API Requests"""
@@ -125,14 +136,14 @@ class PrivateListingAPITests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
 
-
     def test_listing_list_limited_to_user(self):
         """Test list of listings is limited to authenticated users"""
-        other_user =  create_user(email='test1@example.com',
-                                first_name='Joey',
-                                last_name='Smith',
-                                phone_number='8053394923',
-                                password='testpass123')
+        other_user = create_user(
+                                    email='test1@example.com',
+                                    first_name='Joey',
+                                    last_name='Smith',
+                                    phone_number='8053394923',
+                                    password='testpass123')
         create_listing(user=other_user)
         create_listing(user=self.user)
 
@@ -144,11 +155,11 @@ class PrivateListingAPITests(TestCase):
 
     def test_retrieve_listing_details(self):
         """Test retriving a list of listings"""
-        listing = create_listing(user=self.user,
-                       replacement_value_cents=10000,
-                       make='Fender',
-                       year=2021
-                       )
+        listing = create_listing(
+                                    user=self.user,
+                                    replacement_value_cents=10000,
+                                    make='Fender',
+                                    year=2021)
         url = detail_url(listing.id)
         res = self.client.get(url)
         serializer = ListingDetailSerializer(listing)
@@ -159,15 +170,19 @@ class PrivateListingAPITests(TestCase):
         payload = {
             'title': 'sample listing',
             'price_cents': 10000,
-            'description':'sample description',
-            'address': {'address_1':'1197 W 36th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
+            'description': 'sample description',
+            'address': {'address_1': '1197 W 36th St',
+                        'city': 'Los Angeles',
+                        'state': 'CA',
+                        'zip_code': '90007'}
         }
         res = self.client.post(LISTINGS_URL, payload, format='json')
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         listing = Listing.objects.get(id=res.data['id'])
         for k, v in payload.items():
             if k == 'address':
-                self.assertTrue(Address.objects.filter(address_1=v['address_1']).exists())
+                self.assertTrue(
+                    Address.objects.filter(address_1=v['address_1']).exists())
             else:
                 self.assertEqual(getattr(listing, k), v)
         self.assertEqual(listing.user, self.user)
@@ -177,17 +192,16 @@ class PrivateListingAPITests(TestCase):
         payload = {
             'title': 'sample listing',
             'price_cents': 10000,
-            'description':'sample description',
+            'description': 'sample description',
             'address': {'address_1': '1129 W 3th St',
-                         'city': 'Los Angeles',
-                         'state': 'CA',
-                         'zip_code': '90007'}
+                        'city': 'Los Angeles',
+                        'state': 'CA',
+                        'zip_code': '90007'}
         }
         res = self.client.post(LISTINGS_URL, payload, format='json')
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         listing = Listing.objects.get(id=res.data['id'])
         self.assertEqual(listing.user, self.user)
-
 
     def test_partial_update(self):
         """Test partial update of a listing"""
@@ -214,17 +228,21 @@ class PrivateListingAPITests(TestCase):
 
         payload = {
             'title': 'new title',
-            'price_cents':600,
-            'address': {'address_1':'1197 W 37th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
+            'price_cents': 600,
+            'address': {'address_1': '1197 W 37th St',
+                        'city': 'Los Angeles',
+                        'state': 'CA',
+                        'zip_code': '90007'}
         }
         url = detail_url(listing.id)
         res = self.client.put(url, payload, format='json')
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         listing.refresh_from_db()
-        for k,v in payload.items():
-            if k =='address':
-                self.assertTrue(Address.objects.filter(address_1 = payload['address']['address_1']).exists())
+        for k, v in payload.items():
+            if k == 'address':
+                self.assertTrue(Address.objects.filter(
+                    address_1=payload['address']['address_1']).exists())
             else:
                 self.assertEqual(getattr(listing, k), v)
         self.assertEqual(listing.user, self.user)
@@ -238,7 +256,7 @@ class PrivateListingAPITests(TestCase):
                                phone_number='2402345642')
         listing = create_listing(user=self.user)
 
-        payload = {'user':new_user.id}
+        payload = {'user': new_user.id}
         url = detail_url(listing.id)
         self.client.patch(url, payload)
         listing.refresh_from_db()
@@ -254,7 +272,7 @@ class PrivateListingAPITests(TestCase):
                                phone_number='2402345642')
         listing = create_listing(user=new_user)
 
-        payload = {'title':'New title'}
+        payload = {'title': 'New title'}
         url = detail_url(listing.id)
         self.client.patch(url, payload)
         listing.refresh_from_db()
@@ -285,13 +303,16 @@ class PrivateListingAPITests(TestCase):
 
     def test_creating_listing_with_category(self):
         """Test creating a listing with a category"""
-        category = Category.objects.create(name='Drums')
+        Category.objects.create(name='Drums')
         payload = {
-        'title': 'Sample Title',
-        'price_cents': 50200,
-        'description': 'Sample Description',
-        'category': [{'name': 'Drums'}],
-        'address': {'address_1':'1197 W 36th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
+                    'title': 'Sample Title',
+                    'price_cents': 50200,
+                    'description': 'Sample Description',
+                    'category': [{'name': 'Drums'}],
+                    'address': {'address_1': '1197 W 36th St',
+                                'city': 'Los Angeles',
+                                'state': 'CA',
+                                'zip_code': '90007'}
         }
         res = self.client.post(LISTINGS_URL, payload, format='json')
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
@@ -335,7 +356,6 @@ class AdminPrivateTestCase(TestCase):
                                 password='testpass123')
         self.client.force_authenticate(self.user)
 
-
     def test_retrieve_listings(self):
         """Test retriving a list of listings shows all listings"""
         create_listing(user=self.user)
@@ -357,15 +377,20 @@ class AdminPrivateTestCase(TestCase):
         payload = {
             'title': 'sample listing',
             'price_cents': 10000,
-            'description':'sample description',
-            'address': {'address_1':'1197 W 36th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
+            'description': 'sample description',
+            'address': {'address_1': '1197 W 36th St',
+                        'city': 'Los Angeles',
+                        'state': 'CA',
+                        'zip_code': '90007'}
         }
         res = self.client.post(LISTINGS_URL, payload, format='json')
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         listing = Listing.objects.get(id=res.data['id'])
         for k, v in payload.items():
             if k == 'address':
-                self.assertTrue(Address.objects.filter(address_1=payload['address']['address_1']).exists())
+                self.assertTrue(Address.objects.filter(
+                    address_1=payload['address']['address_1']
+                    ).exists())
             else:
                 self.assertEqual(getattr(listing, k), v)
         self.assertEqual(listing.user, self.user)
@@ -379,7 +404,7 @@ class AdminPrivateTestCase(TestCase):
                                phone_number='2402345642')
         listing = create_listing(user=new_user)
 
-        payload = {'title':'New title'}
+        payload = {'title': 'New title'}
         url = detail_url(listing.id)
         self.client.patch(url, payload)
         listing.refresh_from_db()
@@ -405,7 +430,7 @@ class ImageUploadTests(TestCase):
     """Tests for the image upload API"""
 
     def setUp(self):
-        self.client=APIClient()
+        self.client = APIClient()
         self.user = create_user(email='test@example.com',
                                 first_name='Joe',
                                 last_name='Smith',
@@ -417,14 +442,13 @@ class ImageUploadTests(TestCase):
     # def tearDown(self):
     #     self.listing.image.delete()
 
-
     def test_upload_image(self):
         """Test uploading an image to listing"""
         with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
-            img = Image.new('RGB', (10,10))
+            img = Image.new('RGB', (10, 10))
             img.save(image_file, format='JPEG')
             image_file.seek(0)
-            payload = {'listing':self.listing.id, 'image': image_file}
+            payload = {'listing': self.listing.id, 'image': image_file}
             res = self.client.post(IMAGE_URL, payload, format='multipart')
 
         self.listing.refresh_from_db()
@@ -434,7 +458,7 @@ class ImageUploadTests(TestCase):
 
     def test_upload_image_bad_request(self):
         """Test uploading invalid image to listing"""
-        url = image_upload_url(self.listing.id)
+        image_upload_url(self.listing.id)
         payload = {'image': 'notanimage'}
         res = self.client.post(IMAGE_URL, payload, format='multipart')
 

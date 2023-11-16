@@ -1,6 +1,5 @@
 from rest_framework import serializers, status
 from django.utils import timezone
-from django.core.exceptions import ValidationError, PermissionDenied
 from core.models import (
     Listing,
     Category,
@@ -22,6 +21,7 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'parent_category']
         read_only_fields = ['id']
 
+
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
@@ -35,26 +35,30 @@ class UnavailableDateSerializer(serializers.ModelSerializer):
         model = UnavailableDate
         fields = '__all__'
 
+
 class ListingDetailSerializer(serializers.ModelSerializer):
     """Serializer for listing details"""
     address = AddressSerializer()
     unavailable_dates = UnavailableDateSerializer(many=True, required=False)
     category = CategorySerializer(many=True, required=False)
+
     class Meta:
         model = Listing
-        fields=['id', 'title', 'price_cents','description',
-                'year', 'make', 'model', 'replacement_value_cents',
-                'address', 'avg_stars', 'num_reviews',
-                'category', 'unavailable_dates']
+        fields = [
+                    'id', 'title', 'price_cents', 'description',
+                    'year', 'make', 'model', 'replacement_value_cents',
+                    'address', 'avg_stars', 'num_reviews',
+                    'category', 'unavailable_dates']
         read_only_fields = ['id', 'avg_stars', 'num_reviews']
 
     def _get_or_create_address(self, address_data):
-        address, created = Address.objects.get_or_create(
-                                            address_1=address_data['address_1'],
-                                            city=address_data['city'],
-                                            state=address_data['state'],
-                                            zip_code=address_data['zip_code']
-                                            )
+        address, created = Address.objects \
+            .get_or_create(
+                            address_1=address_data['address_1'],
+                            city=address_data['city'],
+                            state=address_data['state'],
+                            zip_code=address_data['zip_code']
+                            )
         return address
 
     def _get_category(self, category, listing):
@@ -68,8 +72,6 @@ class ListingDetailSerializer(serializers.ModelSerializer):
             date, _ = UnavailableDate.objects.get_or_create(**date_data)
             if date not in listing.unavailable_dates.all():
                 listing.unavailable_dates.add(date)
-
-
 
     def create(self, validated_data):
         """Create a listing"""
@@ -119,6 +121,7 @@ class SavedSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'listing']
         read_only_fields = ['id']
 
+
 class ListingReviewSerializer(serializers.ModelSerializer):
     """Serializer for listing reviews"""
     class Meta:
@@ -134,6 +137,7 @@ class UserReviewSerializer(serializers.ModelSerializer):
         fields = ['id', 'lender', 'renter', 'stars', 'text']
         read_only_fields = ['id']
 
+
 class OrdersSerializer(serializers.ModelSerializer):
     """Serializer for orders"""
 
@@ -146,25 +150,37 @@ class OrdersSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'subtotal_price', 'lender']
 
     def create(self, validated_data):
-        num_days_rented = (validated_data['end_date'] - validated_data['start_date']).days + 1
-        subtotal_price = validated_data['listing'].price_cents * num_days_rented
+        num_days_rented = (
+                            validated_data['end_date'] -
+                            validated_data['start_date']).days + 1
+        subtotal_price = validated_data['listing'].price_cents \
+            * num_days_rented
         validated_data['subtotal_price'] = subtotal_price
         listing = validated_data['listing']
         validated_data['lender'] = listing.user
         if validated_data['user'] == validated_data['lender']:
-            raise serializers.ValidationError("The user and the lender cannot be the same.", code=status.HTTP_400_BAD_REQUEST)
+            raise serializers.ValidationError(
+                                                "The user and the \
+                                                lender cannot be the same.",
+                                                code=status.
+                                                HTTP_400_BAD_REQUEST)
         start_date = validated_data.get('start_date')
         end_date = validated_data.get('end_date')
         listing = validated_data.get('listing')
 
         # Get a list of unavailable dates for the listing
-        unavailable_dates = listing.unavailable_dates.values_list('date', flat=True)
-        dates_between = [start_date + timedelta(days=x) for x in range((end_date - start_date).days + 1)]
+        unavailable_dates = listing \
+            .unavailable_dates \
+            .values_list('date', flat=True)
+        dates_between = [start_date + timedelta(days=x)
+                         for x in range((end_date - start_date).days + 1)]
         unavailable_dates_set = set(unavailable_dates)
-        overlapping_dates = [date for date in dates_between if date in unavailable_dates_set]
+        overlapping_dates = [date for date in dates_between
+                             if date in unavailable_dates_set]
 
         if overlapping_dates:
-            raise serializers.ValidationError("The selected dates are unavailable for this listing.")
+            raise serializers.ValidationError("The selected dates \
+                                              are unavailable for the listing")
 
         order = Orders.objects.create(**validated_data)
         return order
@@ -174,10 +190,16 @@ class OrdersSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         if 'status' in validated_data:
             if validated_data['status'] == 'Approved':
-                dates_between = [instance.start_date + timedelta(days=x) for x in
-                                range((instance.end_date - instance.start_date).days + 1)]
+                dates_between = [
+                                    instance.start_date + timedelta(days=x)
+                                    for x in range(
+                                                    (
+                                                        instance.end_date -
+                                                        instance.start_date)
+                                                    .days + 1)]
                 for date_data in dates_between:
-                    date, _ = UnavailableDate.objects.get_or_create(date=date_data)
+                    date, _ = UnavailableDate.objects \
+                        .get_or_create(date=date_data)
                     if date not in instance.listing.unavailable_dates.all():
                         instance.listing.unavailable_dates.add(date)
         instance.updated_at = timezone.now()
@@ -191,4 +213,3 @@ class ListingImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'listing', 'image']
         read_only_fields = ['id']
         extra_kwargs = {'image': {'required': True}}
-
