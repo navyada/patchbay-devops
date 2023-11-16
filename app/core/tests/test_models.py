@@ -2,7 +2,6 @@
 
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from decimal import Decimal
 from unittest.mock import patch
 from core import models
 
@@ -66,7 +65,8 @@ class ModelTests(TestCase):
             i += 1
 
     def test_new_user_without_email_raises_error(self):
-        """ Test that creating a user without email raises an exception"""
+        """ Test that creating a user without
+        email raises an exception"""
         with self.assertRaises(ValueError):
             get_user_model().objects.create_user(
                 email='',
@@ -76,7 +76,8 @@ class ModelTests(TestCase):
                 phone_number=self.testphonenumber)
 
     def test_new_user_without_first_name_raises_error(self):
-        """ Test that creating a user without first name raises an exception"""
+        """ Test that creating a user without
+        first name raises an exception"""
         with self.assertRaises(ValueError):
             get_user_model().objects.create_user(
                 email=self.testemail,
@@ -86,7 +87,8 @@ class ModelTests(TestCase):
                 phone_number=self.testphonenumber)
 
     def test_new_user_without_last_name_raises_error(self):
-        """ Test that creating a user without last name raises an exception"""
+        """ Test that creating a user without
+        last name raises an exception"""
         with self.assertRaises(ValueError):
             get_user_model().objects.create_user(
                 email=self.testemail,
@@ -180,15 +182,20 @@ class ModelTests(TestCase):
                         }
         user = get_user_model().objects.create_user(**user_details)
         default = {
-        'title': 'Sample Title',
-        'price_cents': 50200,
-        'description': 'Sample Description',
-        'address': {'address_1':'1197 W 36th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
-                 }
+                    'title': 'Sample Title',
+                    'price_cents': 50200,
+                    'description': 'Sample Description',
+                    'address': {'address_1': '1197 W 36th St',
+                                'city': 'Los Angeles',
+                                'state': 'CA',
+                                'zip_code': '90007'}}
 
         address = default.pop('address', None)
         address, created = models.Address.objects.get_or_create(**address)
-        listing = models.Listing.objects.create(user=user, address=address, **default)
+        listing = models.Listing.objects.create(
+                                                user=user,
+                                                address=address,
+                                                **default)
         self.assertEqual(str(listing), listing.title)
 
     def test_create_category(self):
@@ -199,13 +206,16 @@ class ModelTests(TestCase):
 
     def test_create_address(self):
         """Test creating a address is successful"""
-        address = models.Address.objects.create(
-            address_1='1129 W 37th St',
-            city='Los Angeles',
-            state='CA',
-            zip_code='90007'
-        )
-        self.assertTrue(models.Address.objects.filter(address_1='1129 W 37th St').exists())
+        models.Address.objects.create(
+                                        address_1='1129 W 37th St',
+                                        city='Los Angeles',
+                                        state='CA',
+                                        zip_code='90007')
+        self.assertTrue(
+                        models.Address
+                        .objects
+                        .filter(address_1='1129 W 37th St')
+                        .exists())
 
     def test_save_listing(self):
         """Test saving a listing"""
@@ -217,17 +227,26 @@ class ModelTests(TestCase):
                 phone_number=self.testphonenumber,
                )
         default = {
-        'title': 'Sample Title',
-        'price_cents': 50200,
-        'description': 'Sample Description',
-        'address': {'address_1':'1197 W 36th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
-                 }
+                    'title': 'Sample Title',
+                    'price_cents': 50200,
+                    'description': 'Sample Description',
+                    'address': {'address_1': '1197 W 36th St',
+                                'city': 'Los Angeles',
+                                'state': 'CA',
+                                'zip_code': '90007'}}
 
         address = default.pop('address', None)
         address, created = models.Address.objects.get_or_create(**address)
-        listing = models.Listing.objects.create(user=user, address=address, **default)
-        saved = models.Saved.objects.create(user=user, listing=listing)
-        self.assertTrue(models.Saved.objects.filter(user=user, listing=listing).exists())
+        listing = models.Listing.objects.create(
+                                                user=user,
+                                                address=address,
+                                                **default)
+        models.Saved.objects.create(user=user, listing=listing)
+        self.assertTrue(
+                        models.Saved
+                        .objects
+                        .filter(user=user, listing=listing)
+                        .exists())
 
     def test_writing_review(self):
         user = get_user_model().objects.create_user(
@@ -238,15 +257,20 @@ class ModelTests(TestCase):
                 phone_number=self.testphonenumber,
                )
         default = {
-        'title': 'Sample Title',
-        'price_cents': 50200,
-        'description': 'Sample Description',
-        'address': {'address_1':'1197 W 36th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
-                 }
+                    'title': 'Sample Title',
+                    'price_cents': 50200,
+                    'description': 'Sample Description',
+                    'address': {'address_1': '1197 W 36th St',
+                                'city': 'Los Angeles',
+                                'state': 'CA',
+                                'zip_code': '90007'}}
 
         address = default.pop('address', None)
         address, created = models.Address.objects.get_or_create(**address)
-        listing = models.Listing.objects.create(user=user, address=address, **default)
+        listing = models.Listing.objects.create(
+                                                user=user,
+                                                address=address,
+                                                **default)
         user2 = get_user_model().objects.create_user(
                 email='test123@example.com',
                 password=self.testpassword,
@@ -254,44 +278,60 @@ class ModelTests(TestCase):
                 last_name=self.testlastname,
                 phone_number='8054929345',
                )
-        review = models.ListingReview.objects.create(user=user2, listing=listing, stars=4, text="Good Rental")
-        self.assertTrue(models.ListingReview.objects.filter(user=user2, listing=listing).exists())
+        models.ListingReview.objects.create(
+                                            user=user2,
+                                            listing=listing,
+                                            stars=4,
+                                            text="Good Rental")
+        self.assertTrue(
+                        models.ListingReview
+                        .objects
+                        .filter(user=user2, listing=listing)
+                        .exists())
 
     def test_initiate_order(self):
         """Test creating a new order"""
 
-        user = get_user_model().objects.create_user(
-        email=self.testemail,
-        password=self.testpassword,
-        first_name=self.testfirstname,
-        last_name=self.testlastname,
-        phone_number=self.testphonenumber,
-        )
+        user = get_user_model() \
+            .objects \
+            .create_user(
+                            email=self.testemail,
+                            password=self.testpassword,
+                            first_name=self.testfirstname,
+                            last_name=self.testlastname,
+                            phone_number=self.testphonenumber,
+                            )
         default = {
-        'title': 'Sample Title',
-        'price_cents': 50200,
-        'description': 'Sample Description',
-        'address': {'address_1':'1197 W 36th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
-                 }
+                    'title': 'Sample Title',
+                    'price_cents': 50200,
+                    'description': 'Sample Description',
+                    'address': {'address_1': '1197 W 36th St',
+                                'city': 'Los Angeles',
+                                'state': 'CA',
+                                'zip_code': '90007'}
+                            }
 
         address = default.pop('address', None)
         address, created = models.Address.objects.get_or_create(**address)
-        listing = models.Listing.objects.create(user=user, address=address, **default)
+        listing = models.Listing.objects.create(
+                                                user=user,
+                                                address=address,
+                                                **default)
         user2 = get_user_model().objects.create_user(
                 email='test123@example.com',
                 password=self.testpassword,
                 first_name=self.testfirstname,
                 last_name=self.testlastname,
                 phone_number='8054929345')
-        order = models.Orders.objects.create(user=user2,
-                                             lender=listing.user,
-                                            listing=listing,
-                                            requested_date='2023-10-26',
-                                            start_date='2023-10-27',
-                                            end_date='2023-10-29',
-                                            subtotal_price=10)
+        models.Orders.objects.create(
+                                        user=user2,
+                                        lender=listing.user,
+                                        listing=listing,
+                                        requested_date='2023-10-26',
+                                        start_date='2023-10-27',
+                                        end_date='2023-10-29',
+                                        subtotal_price=10)
         self.assertEqual(models.Orders.objects.count(), 1)
-
 
     def test_create_user_review(self):
         """Test creating a review for a user"""
@@ -316,6 +356,7 @@ class ModelTests(TestCase):
             text='Bad person')
         self.assertEqual(models.UserReview.objects.count(), 1)
 
+
 @patch('core.models.uuid.uuid4')
 def test_listing_file_name_uuid(self, mock_uuid):
     """Test generating image path"""
@@ -324,6 +365,7 @@ def test_listing_file_name_uuid(self, mock_uuid):
     file_path = models.listing_image_file_path(None, 'example.jpg')
 
     self.assertEqual(file_path, f'uploads/listing/{uuid}.jpg')
+
 
 @patch('core.models.uuid.uuid4')
 def test_user_file_name_uuid(self, mock_uuid):

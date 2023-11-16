@@ -14,15 +14,14 @@ from core.models import (
     Orders,
     Address
     )
-from listing.serializers import (
-    OrdersSerializer
-    )
 
 ORDERS_URL = reverse('listing:orders-list')
+
 
 def detail_url(id):
     """Create and return URL for detailed listing"""
     return reverse('listing:listing-detail', args=[id])
+
 
 def create_listing(user, **params):
     """Create and return a sample listing"""
@@ -30,13 +29,17 @@ def create_listing(user, **params):
         'title': 'Sample Title',
         'price_cents': 50200,
         'description': 'Sample Description',
-        'address': {'address_1':'1197 W 36th St', 'city':'Los Angeles', 'state':'CA', 'zip_code':'90007'}
+        'address': {'address_1': '1197 W 36th St',
+                    'city': 'Los Angeles',
+                    'state': 'CA',
+                    'zip_code': '90007'}
     }
     default.update(params)
     address = default.pop('address', None)
     address, created = Address.objects.get_or_create(**address)
     listing = Listing.objects.create(user=user, address=address, **default)
     return listing
+
 
 def create_user(**params):
     """Create and return a new user"""
@@ -54,16 +57,17 @@ class PublicCategoryAPITests(TestCase):
         res = self.client.get(ORDERS_URL)
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
+
 class PrivateCategoryAPITests(TestCase):
     """Test authenticated API Requests"""
     def setUp(self):
-            self.client = APIClient()
-            self.user = create_user(email='test@example.com',
-                                    first_name='Joe',
-                                    last_name='Smith',
-                                    phone_number='8054394923',
-                                    password='testpass123')
-            self.client.force_authenticate(self.user)
+        self.client = APIClient()
+        self.user = create_user(email='test@example.com',
+                                first_name='Joe',
+                                last_name='Smith',
+                                phone_number='8054394923',
+                                password='testpass123')
+        self.client.force_authenticate(self.user)
 
     def test_create_order(self):
         """Test creating orders"""
@@ -74,11 +78,11 @@ class PrivateCategoryAPITests(TestCase):
                             password='testpass123')
         listing = create_listing(user1)
         payload = {
-            'user':self.user.id,
+            'user': self.user.id,
             'listing': listing.id,
-            'requested_date':'2023-10-26',
-            'start_date':'2023-10-27',
-            'end_date':'2023-10-29'
+            'requested_date': '2023-10-26',
+            'start_date': '2023-10-27',
+            'end_date': '2023-10-29'
             }
         res = self.client.post(ORDERS_URL, payload)
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
@@ -91,12 +95,13 @@ class PrivateCategoryAPITests(TestCase):
                             phone_number='8054374923',
                             password='testpass123')
         listing = create_listing(user1)
-        Orders.objects.create(user=self.user,
-                                    lender=listing.user,
-                                    listing=listing,
-                                    requested_date='2023-10-26',
-                                    start_date='2023-10-27',
-                                    end_date='2023-10-29')
+        Orders.objects.create(
+                                user=self.user,
+                                lender=listing.user,
+                                listing=listing,
+                                requested_date='2023-10-26',
+                                start_date='2023-10-27',
+                                end_date='2023-10-29')
         res = self.client.get(ORDERS_URL)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 1)
@@ -109,23 +114,25 @@ class PrivateCategoryAPITests(TestCase):
                             phone_number='8054494923',
                             password='testpass123')
         listing = create_listing(user1)
-        Orders.objects.create(user=self.user,
-                                    lender=listing.user,
-                                    listing=listing,
-                                    requested_date='2023-10-26',
-                                    start_date='2023-10-27',
-                                    end_date='2023-10-29')
+        Orders.objects.create(
+                                user=self.user,
+                                lender=listing.user,
+                                listing=listing,
+                                requested_date='2023-10-26',
+                                start_date='2023-10-27',
+                                end_date='2023-10-29')
         user2 = create_user(email='test2@example.com',
                             first_name='Joe',
                             last_name='Smith',
                             phone_number='8054394933',
                             password='testpass123')
-        Orders.objects.create(user=user2,
-                                    lender=listing.user,
-                                    listing=listing,
-                                    requested_date='2023-10-26',
-                                    start_date='2023-10-27',
-                                    end_date='2023-10-29')
+        Orders.objects.create(
+                                user=user2,
+                                lender=listing.user,
+                                listing=listing,
+                                requested_date='2023-10-26',
+                                start_date='2023-10-27',
+                                end_date='2023-10-29')
         res = self.client.get(ORDERS_URL)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 1)
@@ -139,19 +146,21 @@ class PrivateCategoryAPITests(TestCase):
                             phone_number='8054594923',
                             password='testpass123')
         listing = create_listing(user1)
-        Orders.objects.create(user=self.user,
-                                    lender=listing.user,
-                                    listing=listing,
-                                    requested_date='2023-10-26',
-                                    start_date='2023-10-27',
-                                    end_date='2023-10-29')
+        Orders.objects.create(
+                                user=self.user,
+                                lender=listing.user,
+                                listing=listing,
+                                requested_date='2023-10-26',
+                                start_date='2023-10-27',
+                                end_date='2023-10-29')
         listing = create_listing(self.user)
-        Orders.objects.create(user=user1,
-                                    lender=listing.user,
-                                    listing=listing,
-                                    requested_date='2023-10-26',
-                                    start_date='2023-10-27',
-                                    end_date='2023-10-29')
+        Orders.objects.create(
+                                user=user1,
+                                lender=listing.user,
+                                listing=listing,
+                                requested_date='2023-10-26',
+                                start_date='2023-10-27',
+                                end_date='2023-10-29')
         res = self.client.get(ORDERS_URL)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 2)
@@ -159,11 +168,11 @@ class PrivateCategoryAPITests(TestCase):
     def test_cannot_self_order(self):
         listing = create_listing(self.user)
         payload = {
-            'user':self.user.id,
+            'user': self.user.id,
             'listing': listing.id,
-            'requested_date':'2023-10-26',
-            'start_date':'2023-10-27',
-            'end_date':'2023-10-29'
+            'requested_date': '2023-10-26',
+            'start_date': '2023-10-27',
+            'end_date': '2023-10-29'
             }
         res = self.client.post(ORDERS_URL, payload)
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
@@ -177,11 +186,11 @@ class PrivateCategoryAPITests(TestCase):
                             password='testpass123')
         listing = create_listing(user1)
         payload = {
-            'user':self.user.id,
+            'user': self.user.id,
             'listing': listing.id,
-            'requested_date':'2023-10-26',
-            'start_date':'2023-10-27',
-            'end_date':'2023-10-29'
+            'requested_date': '2023-10-26',
+            'start_date': '2023-10-27',
+            'end_date': '2023-10-29'
             }
         res = self.client.post(ORDERS_URL, payload)
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
@@ -197,16 +206,16 @@ class PrivateCategoryAPITests(TestCase):
                             password='testpass123')
         listing = create_listing(user1)
         payload = {
-            'user':self.user.id,
+            'user': self.user.id,
             'listing': listing.id,
-            'requested_date':'2023-10-26',
-            'start_date':'2023-10-27',
-            'end_date':'2023-10-29'
+            'requested_date': '2023-10-26',
+            'start_date': '2023-10-27',
+            'end_date': '2023-10-29'
             }
         res = self.client.post(ORDERS_URL, payload)
         payload = {
-            'lender_response':'Approve',
-            'status':'Approved'
+            'lender_response': 'Approve',
+            'status': 'Approved'
         }
         url = reverse('listing:orders-detail', args=[res.data['id']])
         res = self.client.patch(url, payload)
@@ -224,12 +233,12 @@ class PrivateCategoryAPITests(TestCase):
                             password='testpass123')
         listing = create_listing(user1)
         payload = {
-            'user':self.user.id,
-            'listing': listing.id,
-            'requested_date':'2023-10-26',
-            'start_date':'2023-10-27',
-            'end_date':'2023-10-29'
-            }
+                'user': self.user.id,
+                'listing': listing.id,
+                'requested_date': '2023-10-26',
+                'start_date': '2023-10-27',
+                'end_date': '2023-10-29'
+                }
         res = self.client.post(ORDERS_URL, payload)
         url = reverse('listing:orders-detail', args=[res.data['id']])
         res = self.client.delete(url)
