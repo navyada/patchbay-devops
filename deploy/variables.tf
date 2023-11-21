@@ -21,3 +21,18 @@ variable "db_password" {
 variable "bastion_key_name" {
   default = "patchbay-app-api-devops-bastion"
 }
+
+variable "ecr_image_api" {
+  description = "ECR Image for API"
+  default     = "487912273673.dkr.ecr.us-east-1.amazonaws.com/patchbay-app-api-devops:latest"
+}
+
+variable "ecr_image_proxy" {
+  description = "ECR Image for proxy"
+  default     = "487912273673.dkr.ecr.us-east-1.amazonaws.com/patchbay-app-api-proxy:latest"
+}
+
+variable "django_secret_key" {
+  description = "Secret key for Django app"
+}
+
