@@ -36,3 +36,17 @@ variable "django_secret_key" {
   description = "Secret key for Django app"
 }
 
+variable "dns_zone_name" {
+  description = "Domain name"
+  default     = "patchbaydev.net"
+}
+
+variable "subdomain" {
+  description = "Subdomain per environment"
+  type        = map(string)
+  default = {
+    production = "api"
+    staging    = "api.staging"
+    dev        = "api.dev"
+  }
+}
