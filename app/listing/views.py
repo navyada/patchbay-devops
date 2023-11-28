@@ -10,7 +10,6 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Q
 from django.core.exceptions import PermissionDenied
-
 from core.models import (
     User,
     Listing,
@@ -57,6 +56,17 @@ class ListingViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Create a new listing"""
         serializer.save(user=self.request.user)
+
+    @action(detail=False,
+            methods=['GET'],
+            url_path='recent-listing',
+            authentication_classes=[],
+            permission_classes=[])
+    def recent_listings(self, request):
+        listings = Listing.objects.filter(address__city='Los Angeles') \
+            .order_by('-created_at')[:8]
+        serializer = serializers.ListingSerializer(listings, many=True)
+        return Response(serializer.data)
 
 
 class ListingImageViewSet(viewsets.ModelViewSet):

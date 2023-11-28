@@ -107,9 +107,11 @@ class ListingDetailSerializer(serializers.ModelSerializer):
 
 class ListingSerializer(ListingDetailSerializer):
     """Serializer for listings"""
+    studio = serializers.CharField(source='user.studio', read_only=True)
+
     class Meta(ListingDetailSerializer.Meta):
         fields = [
-            'id', 'title', 'price_cents', 'address', 'image'
+            'id', 'title', 'studio', 'price_cents', 'address', 'image'
             ]
 
 

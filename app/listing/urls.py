@@ -36,5 +36,8 @@ router.register('userreviewreadonly',
 router.register('upload-image',
                 views.ListingImageViewSet,
                 basename='uploadimage')
+# router.register('recent-listings',
+#                 views.recent_listings,
+#                 basename='recent-listings')
 app_name = 'listing'
 urlpatterns = [path("", include(router.urls))]
