@@ -8,3 +8,4 @@ uwsgi>=2.0.19,<2.1
 django-localflavor
 boto3>=1.12.0,<1.13
 django-storages>=1.9.1,<1.10
+django-cors-headers

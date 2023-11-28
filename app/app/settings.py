@@ -52,7 +52,8 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'user',
     'listing',
-    'localflavor'
+    'localflavor',
+    'corsheaders'
 ]
 
 MIDDLEWARE = [
@@ -63,9 +64,36 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware'
 ]
 
 ROOT_URLCONF = 'app.urls'
+
+CORS_ALLOWED_ORIGINS = [
+    "https://www.patchbaydev.net",
+    "http://localhost:3000"
+]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 TEMPLATES = [
     {
