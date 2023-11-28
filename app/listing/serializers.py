@@ -212,6 +212,6 @@ class OrdersSerializer(serializers.ModelSerializer):
 class ListingImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ListingImage
-        fields = ['id', 'listing', 'image']
+        fields = ['id', 'listing', 'order', 'image']
         read_only_fields = ['id']
         extra_kwargs = {'image': {'required': True}}
