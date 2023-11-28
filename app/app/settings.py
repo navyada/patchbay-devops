@@ -71,7 +71,7 @@ ROOT_URLCONF = 'app.urls'
 
 CORS_ALLOWED_ORIGINS = [
     "https://www.patchbaydev.net",
-    "http://localhost:3000/"
+    "http://localhost:3000"
 ]
 
 CORS_ALLOW_METHODS = [
