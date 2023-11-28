@@ -43,10 +43,22 @@ app_name = 'listing'
 # urlpatterns = [path("", include(router.urls))]
 # Include the nested router for image-related actions
 image_router = DefaultRouter()
-image_router.register('upload-image', views.ListingImageViewSet, basename='uploadimage')
-image_router.register('get-images', views.ListingImageViewSet, basename='getimages')
-image_router.register('update-image', views.ListingImageViewSet, basename='updateimage')
-image_router.register('delete-image', views.ListingImageViewSet, basename='deleteimage')
+image_router.register(
+                        'upload-image',
+                        views.ListingImageViewSet,
+                        basename='uploadimage')
+image_router.register(
+                        'get-images',
+                        views.ListingImageViewSet,
+                        basename='getimages')
+image_router.register(
+                        'update-image',
+                        views.ListingImageViewSet,
+                        basename='updateimage')
+image_router.register(
+                        'delete-image',
+                        views.ListingImageViewSet,
+                        basename='deleteimage')
 
 urlpatterns = [
     path("", include(router.urls)),

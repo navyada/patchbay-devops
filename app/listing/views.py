@@ -108,7 +108,7 @@ class ListingViewSet(viewsets.ModelViewSet):
 #         if serializer.is_valid():
 #             serializer.save(listing=listing)
 #             return Response(serializer.data, status=status.HTTP_200_OK)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 
 class ListingImageViewSet(viewsets.ModelViewSet):
@@ -128,13 +128,15 @@ class ListingImageViewSet(viewsets.ModelViewSet):
         listing_id = pk
         if not listing_id:
             return Response(
-                {'detail': 'Please provide a listing ID in the URL parameters.'},
+                {'detail': 'Please provide a listing \
+                    ID in the URL parameters.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         try:
             listing = Listing.objects.get(id=listing_id)
         except Listing.DoesNotExist:
-            return Response({'detail': 'Listing not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': 'Listing not found.'},
+                            status=status.HTTP_404_NOT_FOUND)
 
         images = ListingImage.objects.filter(listing=listing)
         serializer = serializers.ListingImageSerializer(images, many=True)
@@ -172,7 +174,10 @@ class ListingImageViewSet(viewsets.ModelViewSet):
     def update_image(self, request, pk=None):
         """Update an image for a listing"""
         image = self.get_object()
-        serializer = serializers.ListingImageSerializer(image, data=request.data, partial=True)
+        serializer = serializers.ListingImageSerializer(
+                                                        image,
+                                                        data=request.data,
+                                                        partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -183,7 +188,8 @@ class ListingImageViewSet(viewsets.ModelViewSet):
         """Delete an image for a listing"""
         image = self.get_object()
         image.delete()
-        return Response({'detail': 'Image deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+        return Response({'detail': 'Image deleted successfully.'},
+                        status=status.HTTP_204_NO_CONTENT)
 
 
 class ListingReadOnlyViewSet(viewsets.ReadOnlyModelViewSet):
