@@ -57,16 +57,16 @@ class ListingViewSet(viewsets.ModelViewSet):
         """Create a new listing"""
         serializer.save(user=self.request.user)
 
-    @action(detail=False,
-            methods=['GET'],
-            url_path='recent-listing',
-            authentication_classes=[],
-            permission_classes=[])
-    def recent_listings(self, request):
-        listings = Listing.objects.filter(address__city='Los Angeles') \
-            .order_by('-created_at')[:8]
-        serializer = serializers.ListingSerializer(listings, many=True)
-        return Response(serializer.data)
+    # @action(detail=False,
+    #         methods=['GET'],
+    #         url_path='recent-listing',
+    #         authentication_classes=[],
+    #         permission_classes=[])
+    # def recent_listings(self, request):
+    #     listings = Listing.objects.filter(address__city='Los Angeles') \
+    #         .order_by('-created_at')[:8]
+    #     serializer = serializers.ListingSerializer(listings, many=True)
+    #     return Response(serializer.data)
 
 
 class ListingImageViewSet(viewsets.ModelViewSet):
@@ -137,6 +137,15 @@ class ListingReadOnlyViewSet(viewsets.ReadOnlyModelViewSet):
         if self.action == 'list':
             return serializers.ListingSerializer
         return self.serializer_class
+
+
+class RecentListingViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    A simple ViewSet for viewing 8 most recent listings.
+    """
+    queryset = Listing.objects.filter(address__city='Los Angeles') \
+        .order_by('-created_at')[:8]
+    serializer_class = serializers.ListingSerializer
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
