@@ -69,8 +69,49 @@ class ListingViewSet(viewsets.ModelViewSet):
     #     return Response(serializer.data)
 
 
+# class ListingImageViewSet(viewsets.ModelViewSet):
+#     """Viewset for listing images"""
+#     serializer_class = serializers.ListingImageSerializer
+#     queryset = ListingImage.objects.all()
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def get_queryset(self):
+#         user = self.request.user
+#         user_listings = Listing.objects.filter(user=user)
+#         return self.queryset.filter(listing__in=user_listings)
+
+
+#     @action(methods=['POST'], detail=True, url_path='upload-image')
+#     def upload_image(self, request, pk=None):
+#         """Upload an image to listing"""
+#         listing_id = self.request.query_params.get('listing')
+#         if not listing_id:
+#             return Response(
+#                             {'detail': 'Please provide a listing \
+#                              ID in the query parameters.'},
+#                             status=status.HTTP_400_BAD_REQUEST
+#                             )
+#         try:
+#             listing = Listing.objects.get(id=listing_id)
+#         except Listing.DoesNotExist:
+#             return Response({'detail': 'Listing not found.'},
+#                             status=status.HTTP_404_NOT_FOUND)
+#         owner = listing.user
+#         if self.request.user != owner:
+#             return Response(
+#                     {'detail': 'User does not have permission \
+#                      to upload images to this listing.'},
+#                     status=status.HTTP_400_BAD_REQUEST
+#                     )
+#         serializer = self.get_serializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save(listing=listing)
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+#         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+
 class ListingImageViewSet(viewsets.ModelViewSet):
-    """Viewset for listing images"""
     serializer_class = serializers.ListingImageSerializer
     queryset = ListingImage.objects.all()
     authentication_classes = [TokenAuthentication]
@@ -78,15 +119,33 @@ class ListingImageViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        # listing = self.request.query_params.get('listing')
-        user_listings = Listing.objects.get(user=user)
-        return self.queryset.filter(listing=user_listings)
+        user_listings = Listing.objects.filter(user=user)
+        return self.queryset.filter(listing__in=user_listings)
 
-    @action(methods=['POST'], detail=True, url_path='upload-image')
+    @action(methods=['GET'], detail=True, url_path='get-image')
+    def get_images(self, request, pk=None):
+        """Get images for a listing"""
+        listing_id = pk
+        if not listing_id:
+            return Response(
+                {'detail': 'Please provide a listing \
+                    ID in the URL parameters.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            listing = Listing.objects.get(id=listing_id)
+        except Listing.DoesNotExist:
+            return Response({'detail': 'Listing not found.'},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        images = ListingImage.objects.filter(listing=listing)
+        serializer = serializers.ListingImageSerializer(images, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(methods=['POST'], detail=False, url_path='upload-image')
     def upload_image(self, request, pk=None):
         """Upload an image to listing"""
-        print(request.query_params)
-        listing_id = self.request.query_params.get('listing')
+        listing_id = self.request.data['listing']
         if not listing_id:
             return Response(
                             {'detail': 'Please provide a listing \
@@ -110,6 +169,27 @@ class ListingImageViewSet(viewsets.ModelViewSet):
             serializer.save(listing=listing)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=['PUT'], detail=True, url_path='update-image')
+    def update_image(self, request, pk=None):
+        """Update an image for a listing"""
+        image = self.get_object()
+        serializer = serializers.ListingImageSerializer(
+                                                        image,
+                                                        data=request.data,
+                                                        partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=['DELETE'], detail=True, url_path='delete-image')
+    def delete_image(self, request, pk=None):
+        """Delete an image for a listing"""
+        image = self.get_object()
+        image.delete()
+        return Response({'detail': 'Image deleted successfully.'},
+                        status=status.HTTP_204_NO_CONTENT)
 
 
 class ListingReadOnlyViewSet(viewsets.ReadOnlyModelViewSet):
