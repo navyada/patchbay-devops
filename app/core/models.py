@@ -23,7 +23,7 @@ from typing import Union
 def listing_image_file_path(instance, filename):
     """Generate file path for new listing image"""
     ext = os.path.splitext(filename)[1]
-    filename = f'{uuid.uuid4}{ext}'
+    filename = f'{uuid.uuid4()}{ext}'
 
     return os.path.join('uploads', 'listing', filename)
 
@@ -31,7 +31,7 @@ def listing_image_file_path(instance, filename):
 def user_image_file_path(instance, filename):
     """Generate file path for new user image"""
     ext = os.path.splitext(filename)[1]
-    filename = f'{uuid.uuid4}{ext}'
+    filename = f'{uuid.uuid4()}{ext}'
     return os.path.join('uploads', 'user', filename)
 
 

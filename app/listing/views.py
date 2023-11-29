@@ -138,18 +138,19 @@ class ListingImageViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Listing not found.'},
                             status=status.HTTP_404_NOT_FOUND)
 
-        images = ListingImage.objects.filter(listing=listing)
+        images = ListingImage.objects.filter(listing=listing) \
+            .order_by('order')
         serializer = serializers.ListingImageSerializer(images, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(methods=['POST'], detail=False, url_path='upload-image')
     def upload_image(self, request, pk=None):
         """Upload an image to listing"""
-        listing_id = self.request.data['listing']
+        listing_id = self.request.data.get('listing')
         if not listing_id:
             return Response(
                             {'detail': 'Please provide a listing \
-                             ID in the query parameters.'},
+                             ID in the request.'},
                             status=status.HTTP_400_BAD_REQUEST
                             )
         try:
